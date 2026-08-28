@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Orion.Infrastructure" Version="1.8.1-local" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Queries\**\*.sql" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SmartBuy.Core\SmartBuy.Core.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Orion.Application" Version="1.8.0-local" />
+    <PackageReference Include="Orion.Domain" Version="1.8.0-local" />
+    <PackageReference Include="Orion.Infrastructure" Version="1.8.1-local" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SmartBuy.Core\SmartBuy.Core.csproj" />
+    <ProjectReference Include="..\SmartBuy.Data\SmartBuy.Data.csproj" />
+  </ItemGroup>
+
+</Project>

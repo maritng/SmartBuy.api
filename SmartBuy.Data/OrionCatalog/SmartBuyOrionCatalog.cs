@@ -1,0 +1,12 @@
+using Orion.Domain.Attributes;
+
+namespace SmartBuy.Data.OrionCatalog
+{
+    // Catálogo Orion del dominio "SmartBuy".
+    // Las acciones están divididas por subdominio en archivos parciales:
+    //   SmartBuyOrionCatalog.Cadena.cs
+    [OrionCatalog("SmartBuy")]
+    public sealed partial class SmartBuyOrionCatalog
+    {
+    }
+}
