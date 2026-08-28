@@ -1,0 +1,61 @@
+using SmartBuy.Core.Common.Responses;
+using SmartBuy.Core.Interfaces.Repositories;
+using SmartBuy.Core.Models;
+using SmartBuy.Core.Models.Catalogo;
+using Orion.Application.Abstractions;
+
+namespace SmartBuy.Data.Repositories
+{
+    public class ProductoRepository : OrionRepositoryBase, IProductoRepository
+    {
+        public ProductoRepository(IOrionGateway orion) : base(orion)
+        {
+        }
+
+        public Task<StandarResponse<List<ProductoListado>>> GetAllProductosAsync(string? filtro, int limit, int offset, CancellationToken cancellationToken)
+            => ExecuteAsync<List<ProductoListado>>("SmartBuy.GetAllProductos", new
+            {
+                filtro = filtro,
+                limit = limit,
+                offset = offset
+            }, cancellationToken);
+
+        public Task<StandarResponse<List<ProductoDetalle>>> GetProductoByIdAsync(long id, CancellationToken cancellationToken)
+            => ExecuteAsync<List<ProductoDetalle>>("SmartBuy.GetProductoById", new { id = id }, cancellationToken);
+
+        public Task<StandarResponse<IdDto>> CrearProductoAsync(GuardarProductoRequest producto, CancellationToken cancellationToken)
+            => ExecuteAsync<IdDto>("SmartBuy.CrearProducto", new
+            {
+                nombre = producto.Nombre,
+                marcaid = producto.MarcaId,
+                categoriaid = producto.CategoriaId,
+                contenidovalor = producto.ContenidoValor,
+                contenidounidad = producto.ContenidoUnidad,
+                ean = producto.Ean
+            }, cancellationToken);
+
+        public Task<StandarResponse<IdDto>> ActualizarProductoAsync(GuardarProductoRequest producto, CancellationToken cancellationToken)
+            => ExecuteAsync<IdDto>("SmartBuy.ActualizarProducto", new
+            {
+                id = producto.Id,
+                nombre = producto.Nombre,
+                marcaid = producto.MarcaId,
+                categoriaid = producto.CategoriaId,
+                contenidovalor = producto.ContenidoValor,
+                contenidounidad = producto.ContenidoUnidad,
+                ean = producto.Ean
+            }, cancellationToken);
+
+        public Task<StandarResponse<IdDto>> EliminarProductoAsync(long id, CancellationToken cancellationToken)
+            => ExecuteAsync<IdDto>("SmartBuy.EliminarProducto", new { id = id }, cancellationToken);
+
+        public Task<StandarResponse<List<Marca>>> GetAllMarcasAsync(CancellationToken cancellationToken)
+            => ExecuteAsync<List<Marca>>("SmartBuy.GetAllMarcas", null, cancellationToken);
+
+        public Task<StandarResponse<IdDto>> CrearMarcaAsync(string nombre, CancellationToken cancellationToken)
+            => ExecuteAsync<IdDto>("SmartBuy.CrearMarca", new { nombre = nombre }, cancellationToken);
+
+        public Task<StandarResponse<List<CategoriaNodo>>> GetAllCategoriasAsync(CancellationToken cancellationToken)
+            => ExecuteAsync<List<CategoriaNodo>>("SmartBuy.GetAllCategorias", null, cancellationToken);
+    }
+}

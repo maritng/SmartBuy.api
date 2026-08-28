@@ -34,6 +34,8 @@ namespace SmartBuy.Api.Extensions
         {
             services.AddScoped<ICadenaServices, CadenaServices>();
             services.AddScoped<IIngestaServices, IngestaServices>();
+            services.AddScoped<IProductoServices, ProductoServices>();
+            services.AddScoped<IPublicacionServices, PublicacionServices>();
             return services;
         }
 
@@ -42,6 +44,8 @@ namespace SmartBuy.Api.Extensions
         {
             services.AddScoped<ICadenaRepository, CadenaRepository>();
             services.AddScoped<IIngestaRepository, IngestaRepository>();
+            services.AddScoped<IProductoRepository, ProductoRepository>();
+            services.AddScoped<IPublicacionRepository, PublicacionRepository>();
             return services;
         }
 
