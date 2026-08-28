@@ -1,3 +1,4 @@
+using SmartBuy.Api.Filters;
 using SmartBuy.Api.Workers;
 using SmartBuy.Core.Interfaces.Repositories;
 using SmartBuy.Core.Interfaces.Services;
@@ -24,6 +25,7 @@ namespace SmartBuy.Api.Extensions
         {
             services.AddOrion(configuration, typeof(SmartBuyOrionCatalog).Assembly);
             services.AddSingleton<IDbConnectionFactory, OrionDbConnectionFactory>();
+            services.AddScoped<ApiKeyAuthFilter>();
             return services;
         }
 
@@ -31,6 +33,7 @@ namespace SmartBuy.Api.Extensions
         public static IServiceCollection AddApplicationServices(this IServiceCollection services)
         {
             services.AddScoped<ICadenaServices, CadenaServices>();
+            services.AddScoped<IIngestaServices, IngestaServices>();
             return services;
         }
 
@@ -38,6 +41,7 @@ namespace SmartBuy.Api.Extensions
         public static IServiceCollection AddRepositories(this IServiceCollection services)
         {
             services.AddScoped<ICadenaRepository, CadenaRepository>();
+            services.AddScoped<IIngestaRepository, IngestaRepository>();
             return services;
         }
 
