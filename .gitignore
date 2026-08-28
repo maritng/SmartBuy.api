@@ -1,0 +1,11 @@
+# Build .NET
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.user
+
+# Logs locales
+*.log
+LOGS/

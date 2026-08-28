@@ -1,0 +1,25 @@
+# Entorno de desarrollo local de SmartBuy.
+# Etapa 1: solo la base de datos PostgreSQL.
+# Uso: docker compose up -d
+services:
+  db:
+    image: postgres:17
+    container_name: smartbuy-db
+    environment:
+      POSTGRES_USER: smart
+      POSTGRES_PASSWORD: smart123
+      POSTGRES_DB: SmartBuy
+    ports:
+      - "5432:5432"
+    volumes:
+      - smartbuy-pgdata:/var/lib/postgresql/data
+      # Los .sql/.sh de esta carpeta se ejecutan solo la primera vez que se crea el volumen:
+      - ./docker/db-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smart -d SmartBuy"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  smartbuy-pgdata:
