@@ -1,0 +1,153 @@
+using SmartBuy.Core.Common.Responses;
+using SmartBuy.Core.Interfaces.Repositories;
+using SmartBuy.Core.Interfaces.Services;
+using SmartBuy.Core.Models.Recomendacion;
+
+namespace SmartBuy.Core.Services
+{
+    /// <summary>
+    /// La consulta estrella: resuelve la lista de compras contra los últimos
+    /// precios. El repo trae el mejor precio por producto x cadena; acá se
+    /// elige el mínimo por producto (reparto óptimo) y se calcula cuánto se
+    /// ahorra vs. comprar todo en la mejor cadena única. Lógica de C# puro
+    /// sobre la lista del repo: testeable sin base.
+    /// </summary>
+    public class RecomendacionServices : IRecomendacionServices
+    {
+        private const int MaxItems = 100;
+        private const int MaxCantidad = 999;
+
+        private readonly IRecomendacionRepository _recomendacionRepository;
+        private readonly IProductoRepository _productoRepository;
+
+        public RecomendacionServices(IRecomendacionRepository recomendacionRepository, IProductoRepository productoRepository)
+        {
+            _recomendacionRepository = recomendacionRepository;
+            _productoRepository = productoRepository;
+        }
+
+        public async Task<StandarResponse<ListaCompraResumen>> ResolverListaAsync(ListaCompraRequest request, CancellationToken cancellationToken)
+        {
+            var errores = Validar(request);
+            if (errores.Count > 0)
+                return Fallo(errores);
+
+            var cantidades = request.Items.ToDictionary(i => i.ProductoId, i => i.Cantidad);
+
+            var precios = await _recomendacionRepository.GetPreciosParaListaAsync(cantidades.Keys, cancellationToken);
+            if (!precios.Success)
+                return new StandarResponse<ListaCompraResumen> { Success = false, Errors = precios.Errors, Execution = precios.Execution };
+
+            var porProducto = (precios.Result ?? new List<PrecioProductoCadena>())
+                .GroupBy(p => p.ProductoId)
+                .ToDictionary(g => g.Key, g => g.ToList());
+
+            var resumen = new ListaCompraResumen();
+
+            // Reparto óptimo: por producto, la fila más barata (el repo ya ordena
+            // por precio_efectivo, el First es el mínimo).
+            foreach (var (productoId, opciones) in porProducto)
+            {
+                var mejor = opciones.First();
+                var cantidad = cantidades[productoId];
+
+                resumen.Items.Add(new RecomendacionItem
+                {
+                    ProductoId = productoId,
+                    Producto = mejor.Producto,
+                    Cantidad = cantidad,
+                    CadenaId = mejor.CadenaId,
+                    Cadena = mejor.Cadena,
+                    NombrePublicado = mejor.NombrePublicado,
+                    PrecioUnitario = mejor.PrecioEfectivo,
+                    TipoOferta = mejor.TipoOferta,
+                    FechaPrecio = mejor.Fecha,
+                    Subtotal = mejor.PrecioEfectivo * cantidad,
+                    CadenasComparadas = opciones.Count
+                });
+            }
+
+            // Productos pedidos que no aparecieron: o no tienen precio capturado
+            // (van a NoDisponibles con su nombre) o no existen/están de baja (error).
+            foreach (var productoId in cantidades.Keys.Where(id => !porProducto.ContainsKey(id)))
+            {
+                var producto = await _productoRepository.GetProductoByIdAsync(productoId, cancellationToken);
+                var detalle = producto.Result?.FirstOrDefault();
+
+                if (detalle == null || detalle.Id <= 0 || !detalle.Activo)
+                    return Fallo(new List<string> { $"El producto {productoId} no existe o está dado de baja." });
+
+                resumen.NoDisponibles.Add(new ProductoNoDisponible { ProductoId = productoId, Producto = detalle.Nombre });
+            }
+
+            resumen.Totales = CalcularTotales(resumen.Items, porProducto, cantidades);
+
+            return new StandarResponse<ListaCompraResumen> { Success = true, Result = resumen };
+        }
+
+        private static RecomendacionTotales CalcularTotales(
+            List<RecomendacionItem> items,
+            Dictionary<long, List<PrecioProductoCadena>> porProducto,
+            Dictionary<long, int> cantidades)
+        {
+            var totales = new RecomendacionTotales
+            {
+                TotalOptimizado = items.Sum(i => i.Subtotal),
+                CadenasInvolucradas = items.Select(i => i.CadenaId).Distinct().Count()
+            };
+
+            if (items.Count == 0)
+                return totales;
+
+            // Mejor cadena única: entre las cadenas que tienen TODOS los productos
+            // disponibles, la de menor total. Es la vara honesta del ahorro:
+            // "¿cuánto gano repartiendo vs. ir a un solo súper?".
+            var mejorUnica = porProducto.Values
+                .SelectMany(opciones => opciones)
+                .GroupBy(p => new { p.CadenaId, p.Cadena })
+                .Where(g => g.Select(p => p.ProductoId).Distinct().Count() == porProducto.Count)
+                .Select(g => new MejorCadenaUnica
+                {
+                    CadenaId = g.Key.CadenaId,
+                    Cadena = g.Key.Cadena,
+                    Total = g.Sum(p => p.PrecioEfectivo * cantidades[p.ProductoId])
+                })
+                .OrderBy(c => c.Total)
+                .FirstOrDefault();
+
+            if (mejorUnica != null)
+            {
+                totales.MejorCadenaUnica = mejorUnica;
+                totales.Ahorro = mejorUnica.Total - totales.TotalOptimizado;
+            }
+
+            return totales;
+        }
+
+        private static List<string> Validar(ListaCompraRequest? request)
+        {
+            var errores = new List<string>();
+
+            if (request == null || request.Items == null || request.Items.Count == 0)
+                return new List<string> { "La lista debe tener al menos un producto." };
+
+            if (request.Items.Count > MaxItems)
+                errores.Add($"La lista supera el máximo de {MaxItems} productos.");
+
+            if (request.Items.Any(i => i.ProductoId <= 0))
+                errores.Add("Todos los ítems deben tener productoId mayor a cero.");
+
+            if (request.Items.Any(i => i.Cantidad <= 0 || i.Cantidad > MaxCantidad))
+                errores.Add($"cantidad debe estar entre 1 y {MaxCantidad}.");
+
+            var repetidos = request.Items.GroupBy(i => i.ProductoId).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
+            if (repetidos.Count > 0)
+                errores.Add($"Productos repetidos en la lista: {string.Join(", ", repetidos)}.");
+
+            return errores;
+        }
+
+        private static StandarResponse<ListaCompraResumen> Fallo(List<string> errores)
+            => new() { Success = false, Errors = errores };
+    }
+}
