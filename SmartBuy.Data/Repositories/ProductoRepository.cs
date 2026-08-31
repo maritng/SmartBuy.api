@@ -49,6 +49,9 @@ namespace SmartBuy.Data.Repositories
         public Task<StandarResponse<IdDto>> EliminarProductoAsync(long id, CancellationToken cancellationToken)
             => ExecuteAsync<IdDto>("SmartBuy.EliminarProducto", new { id = id }, cancellationToken);
 
+        public Task<StandarResponse<CantidadDto>> GenerarDesdePendientesAsync(int minCadenas, CancellationToken cancellationToken)
+            => ExecuteAsync<CantidadDto>("SmartBuy.GenerarProductosDesdePendientes", new { mincadenas = minCadenas }, cancellationToken);
+
         public Task<StandarResponse<List<Marca>>> GetAllMarcasAsync(CancellationToken cancellationToken)
             => ExecuteAsync<List<Marca>>("SmartBuy.GetAllMarcas", null, cancellationToken);
 

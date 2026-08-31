@@ -16,6 +16,12 @@ namespace SmartBuy.Core.Interfaces.Repositories
 
         Task<StandarResponse<IdDto>> EliminarProductoAsync(long id, CancellationToken cancellationToken);
 
+        /// <summary>
+        /// Crea productos (curado=false) desde los EANs pendientes presentes en al
+        /// menos minCadenas cadenas. Devuelve cuántos creó.
+        /// </summary>
+        Task<StandarResponse<CantidadDto>> GenerarDesdePendientesAsync(int minCadenas, CancellationToken cancellationToken);
+
         Task<StandarResponse<List<Marca>>> GetAllMarcasAsync(CancellationToken cancellationToken);
 
         Task<StandarResponse<IdDto>> CrearMarcaAsync(string nombre, CancellationToken cancellationToken);

@@ -16,6 +16,8 @@ namespace SmartBuy.Core.Interfaces.Services
 
         Task<StandarResponse<IdDto>> EliminarProductoAsync(long id, CancellationToken cancellationToken);
 
+        Task<StandarResponse<GeneracionPendientesResumen>> GenerarDesdePendientesAsync(int? minCadenas, CancellationToken cancellationToken);
+
         Task<StandarResponse<List<Marca>>> GetAllMarcasAsync(CancellationToken cancellationToken);
 
         Task<StandarResponse<IdDto>> CrearMarcaAsync(CrearMarcaRequest request, CancellationToken cancellationToken);

@@ -10,6 +10,7 @@ SELECT p.id,
        p.contenido_valor,
        p.contenido_unidad,
        p.ean,
+       p.curado,
        COUNT(*) OVER () AS total
 FROM producto p
 LEFT JOIN marca m     ON m.id = p.marca_id

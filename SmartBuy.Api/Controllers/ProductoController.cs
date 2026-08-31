@@ -54,6 +54,18 @@ namespace SmartBuy.Api.Controllers
             return resultado.Success ? Ok(resultado) : BadRequest(resultado);
         }
 
+        /// <summary>
+        /// Generación masiva de catálogo desde la cola de pendientes: un producto
+        /// provisorio (curado=false) por cada EAN presente en minCadenas o más
+        /// cadenas (default 2), con re-matcheo retroactivo incluido. Idempotente.
+        /// </summary>
+        [HttpPost("GenerarDesdePendientes")]
+        public async Task<IActionResult> GenerarDesdePendientes([FromQuery] int? minCadenas, CancellationToken cancellationToken)
+        {
+            var resultado = await _productoServices.GenerarDesdePendientesAsync(minCadenas, cancellationToken);
+            return resultado.Success ? Ok(resultado) : BadRequest(resultado);
+        }
+
         [HttpGet("GetAllMarcas")]
         public async Task<IActionResult> GetAllMarcas(CancellationToken cancellationToken)
         {

@@ -137,6 +137,38 @@ namespace SmartBuy.Core.Services
             return respuesta;
         }
 
+        /// <summary>
+        /// Generación masiva de catálogo desde la cola: un producto (curado=false)
+        /// por cada EAN pendiente presente en minCadenas o más cadenas, y después
+        /// el re-matcheo retroactivo global para que las publicaciones enganchen.
+        /// Idempotente: re-ejecutar no duplica (unique de ean) y devuelve 0.
+        /// </summary>
+        public async Task<StandarResponse<GeneracionPendientesResumen>> GenerarDesdePendientesAsync(int? minCadenas, CancellationToken cancellationToken)
+        {
+            var minimo = Math.Clamp(minCadenas ?? 2, 1, 10);
+
+            var creacion = await _productoRepository.GenerarDesdePendientesAsync(minimo, cancellationToken);
+
+            if (!creacion.Success)
+                return new StandarResponse<GeneracionPendientesResumen> { Success = false, Errors = creacion.Errors, Execution = creacion.Execution };
+
+            var resumen = new GeneracionPendientesResumen { ProductosCreados = creacion.Result?.Cantidad ?? 0 };
+
+            var matcheo = await _publicacionRepository.MatchearPendientesPorEanAsync(null, cancellationToken);
+
+            if (matcheo.Success)
+                resumen.PublicacionesMatcheadas = matcheo.Result?.Cantidad ?? 0;
+            else
+                // Los productos ya quedaron creados; el re-matcheo global a demanda
+                // (MatchearPendientesPorEan) es la recuperación si esto falla.
+                _logger.LogWarning("GenerarDesdePendientes: los productos se crearon pero el re-matcheo falló: {Errores}", string.Join(" | ", matcheo.Errors));
+
+            _logger.LogInformation("GenerarDesdePendientes (minCadenas={Min}): {Productos} productos creados, {Matcheadas} publicaciones matcheadas.",
+                minimo, resumen.ProductosCreados, resumen.PublicacionesMatcheadas);
+
+            return new StandarResponse<GeneracionPendientesResumen> { Success = true, Result = resumen };
+        }
+
         public Task<StandarResponse<List<Marca>>> GetAllMarcasAsync(CancellationToken cancellationToken)
             => _productoRepository.GetAllMarcasAsync(cancellationToken);
 

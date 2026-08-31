@@ -21,7 +21,18 @@ namespace SmartBuy.Core.Models.Catalogo
 
         public string? Ean { get; set; }
 
+        /// <summary>false = generado desde pendientes, con nombre provisorio: pendiente de curación.</summary>
+        public bool Curado { get; set; }
+
         /// <summary>Total de filas del filtro (sin paginar), para la paginación del FE.</summary>
         public long Total { get; set; }
+    }
+
+    /// <summary>Resumen de GenerarDesdePendientes: catálogo creado + matching retroactivo.</summary>
+    public class GeneracionPendientesResumen
+    {
+        public long ProductosCreados { get; set; }
+
+        public long PublicacionesMatcheadas { get; set; }
     }
 }
