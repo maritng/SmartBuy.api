@@ -33,5 +33,18 @@ namespace SmartBuy.Core.Models.Bots
 
         /// <summary>Gobierna solo la corrida automática diaria; la ejecución manual lo ignora.</summary>
         public bool Habilitado { get; set; }
+
+        /// <summary>
+        /// Clave PÚBLICA que el sitio de la cadena entrega a todo visitante en su
+        /// propio JS (ej. Constructor.io en Coto). No es un secreto nuestro; se
+        /// versiona sin problema. Solo la usan los bots que la necesiten.
+        /// </summary>
+        public string? ApiKeyPublica { get; set; }
+
+        /// <summary>
+        /// Para cadenas con precio por sucursal (Coto): qué tienda usar como
+        /// referencia. Si no está o no aparece, se usa el precio de lista general.
+        /// </summary>
+        public string? SucursalPreferida { get; set; }
     }
 }

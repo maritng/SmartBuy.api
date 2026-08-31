@@ -69,6 +69,14 @@ namespace SmartBuy.Api.Extensions
             });
             services.AddTransient<ICapturaBot>(sp => sp.GetRequiredService<VtexCapturaBot>());
 
+            services.AddHttpClient<CotoCapturaBot>(client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(30);
+                client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
+                client.DefaultRequestHeaders.Accept.ParseAdd("application/json");
+            });
+            services.AddTransient<ICapturaBot>(sp => sp.GetRequiredService<CotoCapturaBot>());
+
             return services;
         }
 
