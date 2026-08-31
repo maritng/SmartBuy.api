@@ -23,6 +23,13 @@ namespace SmartBuy.Data.OrionCatalog
         public Task IngestaRegistrarItem(OrionContext context) => Task.CompletedTask;
 
         [OrionAction(
+            "IngestaCapturaOkDeHoy",
+            Query = "smartbuy/get_ultima_captura_ok.sql",
+            Provider = "PostgresSmartBuy",
+            ExecutorType = typeof(SqlOrionExecutor))]
+        public Task IngestaCapturaOkDeHoy(OrionContext context) => Task.CompletedTask;
+
+        [OrionAction(
             "IngestaFinalizarCaptura",
             Query = "smartbuy/ingesta_finalizar_captura.sql",
             Provider = "PostgresSmartBuy",

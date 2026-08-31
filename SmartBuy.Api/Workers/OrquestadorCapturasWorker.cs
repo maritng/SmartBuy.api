@@ -1,25 +1,36 @@
+using Microsoft.Extensions.Options;
+using SmartBuy.Core.Interfaces.Repositories;
+using SmartBuy.Core.Interfaces.Services;
+using SmartBuy.Core.Models.Bots;
+
 namespace SmartBuy.Api.Workers
 {
     /// <summary>
     /// Orquestador de capturas de precios: corre dentro del propio monolito
     /// (BackgroundService, sin dependencias externas) y viaja con el contenedor.
-    /// Se despierta periódicamente y dispara las capturas diarias pendientes por
-    /// cadena. Si a futuro hacen falta reintentos sofisticados o dashboard, el
-    /// reemplazo natural de esta clase es Hangfire sobre el mismo Postgres.
+    /// En cada tick revisa, por cadena habilitada, si ya existe una captura 'ok'
+    /// del día (tabla captura); si no, dispara el bot de su plataforma. Si a
+    /// futuro hacen falta reintentos sofisticados o dashboard, el reemplazo
+    /// natural de esta clase es Hangfire sobre el mismo Postgres.
     /// </summary>
     public class OrquestadorCapturasWorker : BackgroundService
     {
-        // Cada cuánto se despierta a revisar si hay capturas pendientes. El control
-        // de "ya corrí hoy" es contra la tabla captura, no contra este timer.
+        // Cada cuánto se despierta a revisar. El control de "ya corrí hoy" es
+        // contra la tabla captura, no contra este timer.
         private static readonly TimeSpan Intervalo = TimeSpan.FromHours(1);
 
         private readonly ILogger<OrquestadorCapturasWorker> _logger;
         private readonly IServiceScopeFactory _scopeFactory;
+        private readonly IOptions<BotsConfiguration> _botsConfiguration;
 
-        public OrquestadorCapturasWorker(ILogger<OrquestadorCapturasWorker> logger, IServiceScopeFactory scopeFactory)
+        public OrquestadorCapturasWorker(
+            ILogger<OrquestadorCapturasWorker> logger,
+            IServiceScopeFactory scopeFactory,
+            IOptions<BotsConfiguration> botsConfiguration)
         {
             _logger = logger;
             _scopeFactory = scopeFactory;
+            _botsConfiguration = botsConfiguration;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -44,15 +55,55 @@ namespace SmartBuy.Api.Workers
             while (await timer.WaitForNextTickAsync(stoppingToken));
         }
 
-        private Task RevisarCapturasPendientesAsync(CancellationToken cancellationToken)
+        private async Task RevisarCapturasPendientesAsync(CancellationToken cancellationToken)
         {
-            // TODO (bots de captura): resolver por cadena si ya existe una captura
-            // 'ok' del día en la tabla captura y, si no, disparar el bot que
-            // corresponda vía un ICapturaService del Core. Los bots llegan con la
-            // etapa 2 de la hoja de ruta; por ahora el worker solo deja constancia
-            // de que está vivo.
-            _logger.LogDebug("Sin bots de captura configurados todavía.");
-            return Task.CompletedTask;
+            var cadenas = _botsConfiguration.Value.Cadenas.Where(c => c.Habilitado).ToList();
+
+            if (cadenas.Count == 0)
+            {
+                _logger.LogDebug("Sin bots habilitados en configuración.");
+                return;
+            }
+
+            foreach (var config in cadenas)
+            {
+                // Scope por cadena: servicios scoped frescos y un fallo aislado.
+                using var scope = _scopeFactory.CreateScope();
+
+                try
+                {
+                    var ingestaRepository = scope.ServiceProvider.GetRequiredService<IIngestaRepository>();
+                    var capturaHoy = await ingestaRepository.GetCapturaOkDeHoyAsync(config.CadenaId, cancellationToken);
+
+                    if (capturaHoy.Success && capturaHoy.Result is { Id: > 0 })
+                        continue; // ya corrió bien hoy
+
+                    var bot = scope.ServiceProvider.GetServices<ICapturaBot>()
+                        .FirstOrDefault(b => b.Tipo.Equals(config.Tipo, StringComparison.OrdinalIgnoreCase));
+
+                    if (bot == null)
+                    {
+                        _logger.LogWarning("No hay bot para la plataforma '{Tipo}' (cadena {Cadena}).", config.Tipo, config.Nombre);
+                        continue;
+                    }
+
+                    _logger.LogInformation("Disparando bot {Tipo} para {Cadena}.", config.Tipo, config.Nombre);
+
+                    var resultado = await bot.EjecutarAsync(config, cancellationToken);
+
+                    if (resultado.Success && resultado.Result != null)
+                        _logger.LogInformation(
+                            "Bot {Cadena} ok: captura {CapturaId}, {Items} ítems ({Matcheadas} matcheadas, {Pendientes} pendientes).",
+                            config.Nombre, resultado.Result.CapturaId, resultado.Result.ItemsProcesados,
+                            resultado.Result.PublicacionesMatcheadas, resultado.Result.PublicacionesPendientes);
+                    else
+                        _logger.LogError("Bot {Cadena} falló: {Errores}", config.Nombre, string.Join(" | ", resultado.Errors));
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Bot de {Cadena}: error no controlado; sigue la próxima cadena.", config.Nombre);
+                }
+            }
         }
     }
 }

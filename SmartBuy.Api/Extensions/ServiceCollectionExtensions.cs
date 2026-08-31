@@ -1,5 +1,7 @@
 using SmartBuy.Api.Filters;
 using SmartBuy.Api.Workers;
+using SmartBuy.Core.Models.Bots;
+using SmartBuy.Core.Services.Bots;
 using SmartBuy.Core.Interfaces.Repositories;
 using SmartBuy.Core.Interfaces.Services;
 using SmartBuy.Core.Services;
@@ -26,6 +28,7 @@ namespace SmartBuy.Api.Extensions
             services.AddOrion(configuration, typeof(SmartBuyOrionCatalog).Assembly);
             services.AddSingleton<IDbConnectionFactory, OrionDbConnectionFactory>();
             services.AddScoped<ApiKeyAuthFilter>();
+            services.Configure<BotsConfiguration>(configuration.GetSection("Bots"));
             return services;
         }
 
@@ -51,10 +54,21 @@ namespace SmartBuy.Api.Extensions
             return services;
         }
 
-        /// <summary>Procesos de fondo: orquestador de capturas diarias.</summary>
+        /// <summary>Procesos de fondo: orquestador de capturas diarias y sus bots.</summary>
         public static IServiceCollection AddWorkers(this IServiceCollection services)
         {
             services.AddHostedService<OrquestadorCapturasWorker>();
+
+            // HttpClient con identidad de navegador: la API pública de VTEX es la
+            // misma que usa el sitio y espera un User-Agent normal.
+            services.AddHttpClient<VtexCapturaBot>(client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(30);
+                client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
+                client.DefaultRequestHeaders.Accept.ParseAdd("application/json");
+            });
+            services.AddTransient<ICapturaBot>(sp => sp.GetRequiredService<VtexCapturaBot>());
+
             return services;
         }
 

@@ -5,6 +5,9 @@ services:
   db:
     image: postgres:17
     container_name: smartbuy-db
+    # Se levanta solo con Docker Desktop tras un reinicio de la máquina
+    # (salvo que lo hayas parado a mano con docker compose stop/down).
+    restart: unless-stopped
     environment:
       POSTGRES_USER: smart
       POSTGRES_PASSWORD: smart123

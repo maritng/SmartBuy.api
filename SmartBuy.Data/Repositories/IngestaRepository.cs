@@ -33,6 +33,9 @@ namespace SmartBuy.Data.Repositories
                 tipooferta = item.TipoOferta
             }, cancellationToken);
 
+        public Task<StandarResponse<IdDto>> GetCapturaOkDeHoyAsync(long cadenaId, CancellationToken cancellationToken)
+            => ExecuteAsync<IdDto>("SmartBuy.IngestaCapturaOkDeHoy", new { cadenaid = cadenaId }, cancellationToken);
+
         public Task<StandarResponse<object>> FinalizarCapturaAsync(long capturaId, string estado, int cantItems, string? errorDetalle, CancellationToken cancellationToken)
             => ExecuteAsync<object>("SmartBuy.IngestaFinalizarCaptura", new
             {
