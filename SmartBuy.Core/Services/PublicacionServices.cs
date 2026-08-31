@@ -72,6 +72,20 @@ namespace SmartBuy.Core.Services
             return respuesta;
         }
 
+        public Task<StandarResponse<CantidadDto>> MatchearPendientesPorEanAsync(string? ean, CancellationToken cancellationToken)
+        {
+            var eanNormalizado = string.IsNullOrWhiteSpace(ean) ? null : ean.Trim();
+
+            if (eanNormalizado != null && (eanNormalizado.Length < 8 || eanNormalizado.Length > 14 || !eanNormalizado.All(char.IsDigit)))
+                return Task.FromResult(new StandarResponse<CantidadDto>
+                {
+                    Success = false,
+                    Errors = new List<string> { "ean debe tener entre 8 y 14 dígitos (u omitirse para re-matchear todos)." }
+                });
+
+            return _publicacionRepository.MatchearPendientesPorEanAsync(eanNormalizado, cancellationToken);
+        }
+
         private static StandarResponse<IdDto> Fallo(string error)
             => new() { Success = false, Errors = new List<string> { error } };
     }

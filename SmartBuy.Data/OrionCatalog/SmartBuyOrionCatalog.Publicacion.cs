@@ -16,6 +16,13 @@ namespace SmartBuy.Data.OrionCatalog
         public Task GetPublicacionesPendientes(OrionContext context) => Task.CompletedTask;
 
         [OrionAction(
+            "MatchearPendientesPorEan",
+            Query = "smartbuy/matchear_pendientes_por_ean.sql",
+            Provider = "PostgresSmartBuy",
+            ExecutorType = typeof(SqlOrionExecutor))]
+        public Task MatchearPendientesPorEan(OrionContext context) => Task.CompletedTask;
+
+        [OrionAction(
             "ResolverMatchingPublicacion",
             Query = "smartbuy/resolver_matching_publicacion.sql",
             Provider = "PostgresSmartBuy",

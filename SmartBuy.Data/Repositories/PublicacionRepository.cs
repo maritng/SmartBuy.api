@@ -20,6 +20,9 @@ namespace SmartBuy.Data.Repositories
                 offset = offset
             }, cancellationToken);
 
+        public Task<StandarResponse<CantidadDto>> MatchearPendientesPorEanAsync(string? ean, CancellationToken cancellationToken)
+            => ExecuteAsync<CantidadDto>("SmartBuy.MatchearPendientesPorEan", new { ean = ean }, cancellationToken);
+
         public Task<StandarResponse<IdDto>> ResolverMatchingAsync(long publicacionId, long? productoId, string estado, CancellationToken cancellationToken)
             => ExecuteAsync<IdDto>("SmartBuy.ResolverMatchingPublicacion", new
             {

@@ -26,6 +26,19 @@ namespace SmartBuy.Api.Controllers
             return pendientes.Success ? Ok(pendientes) : BadRequest(pendientes);
         }
 
+        /// <summary>
+        /// Re-matcheo retroactivo por EAN contra el catálogo activo: sin query
+        /// param procesa todos los pendientes; con ?ean= solo ese código.
+        /// Devuelve cuántas publicaciones engancharon. (El ABM ya lo dispara
+        /// solo al crear/editar un producto con EAN; esto es la versión global.)
+        /// </summary>
+        [HttpPost("MatchearPendientesPorEan")]
+        public async Task<IActionResult> MatchearPendientesPorEan([FromQuery] string? ean, CancellationToken cancellationToken)
+        {
+            var resultado = await _publicacionServices.MatchearPendientesPorEanAsync(ean, cancellationToken);
+            return resultado.Success ? Ok(resultado) : BadRequest(resultado);
+        }
+
         [HttpPost("ResolverMatching")]
         public async Task<IActionResult> ResolverMatching([FromBody] ResolverMatchingRequest request, CancellationToken cancellationToken)
         {

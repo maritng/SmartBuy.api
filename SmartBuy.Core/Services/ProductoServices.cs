@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Logging;
 using SmartBuy.Core.Common.Responses;
 using SmartBuy.Core.Interfaces.Repositories;
 using SmartBuy.Core.Interfaces.Services;
@@ -22,10 +23,17 @@ namespace SmartBuy.Core.Services
         private static partial Regex EanRegex();
 
         private readonly IProductoRepository _productoRepository;
+        private readonly IPublicacionRepository _publicacionRepository;
+        private readonly ILogger<ProductoServices> _logger;
 
-        public ProductoServices(IProductoRepository productoRepository)
+        public ProductoServices(
+            IProductoRepository productoRepository,
+            IPublicacionRepository publicacionRepository,
+            ILogger<ProductoServices> logger)
         {
             _productoRepository = productoRepository;
+            _publicacionRepository = publicacionRepository;
+            _logger = logger;
         }
 
         public Task<StandarResponse<List<ProductoListado>>> GetAllProductosAsync(string? filtro, int? limit, int? offset, CancellationToken cancellationToken)
@@ -63,7 +71,12 @@ namespace SmartBuy.Core.Services
 
             var respuesta = await _productoRepository.CrearProductoAsync(Normalizar(request), cancellationToken);
 
-            return TraducirErroresDeBase(respuesta);
+            var resultado = TraducirErroresDeBase(respuesta);
+
+            if (resultado.Success)
+                await MatchearPendientesDelEanAsync(request.Ean, cancellationToken);
+
+            return resultado;
         }
 
         public async Task<StandarResponse<IdDto>> ActualizarProductoAsync(GuardarProductoRequest request, CancellationToken cancellationToken)
@@ -77,7 +90,38 @@ namespace SmartBuy.Core.Services
             if (respuesta.Success && (respuesta.Result == null || respuesta.Result.Id <= 0))
                 return Fallo<IdDto>($"No existe el producto {request.Id} o está dado de baja.");
 
-            return TraducirErroresDeBase(respuesta);
+            var resultado = TraducirErroresDeBase(respuesta);
+
+            if (resultado.Success)
+                await MatchearPendientesDelEanAsync(request.Ean, cancellationToken);
+
+            return resultado;
+        }
+
+        /// <summary>
+        /// Hook post alta/edición: si el producto tiene EAN, re-matchea al toque
+        /// las publicaciones pendientes ya capturadas con ese EAN (el matching de
+        /// la ingesta solo corre al capturar). Un fallo acá nunca voltea el alta:
+        /// se loguea y el re-matcheo global queda como red de seguridad.
+        /// </summary>
+        private async Task MatchearPendientesDelEanAsync(string? ean, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(ean))
+                return;
+
+            try
+            {
+                var matcheo = await _publicacionRepository.MatchearPendientesPorEanAsync(ean, cancellationToken);
+
+                if (matcheo.Success && matcheo.Result is { Cantidad: > 0 })
+                    _logger.LogInformation("Re-matcheo por EAN {Ean}: {Cantidad} publicaciones pendientes engancharon.", ean, matcheo.Result.Cantidad);
+                else if (!matcheo.Success)
+                    _logger.LogWarning("Re-matcheo por EAN {Ean} falló: {Errores}", ean, string.Join(" | ", matcheo.Errors));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Re-matcheo por EAN {Ean}: error no controlado.", ean);
+            }
         }
 
         public async Task<StandarResponse<IdDto>> EliminarProductoAsync(long id, CancellationToken cancellationToken)

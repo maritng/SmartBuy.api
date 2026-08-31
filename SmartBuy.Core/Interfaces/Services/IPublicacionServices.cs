@@ -9,5 +9,7 @@ namespace SmartBuy.Core.Interfaces.Services
         Task<StandarResponse<List<PublicacionPendiente>>> GetPendientesAsync(long? cadenaId, int? limit, int? offset, CancellationToken cancellationToken);
 
         Task<StandarResponse<IdDto>> ResolverMatchingAsync(ResolverMatchingRequest request, CancellationToken cancellationToken);
+
+        Task<StandarResponse<CantidadDto>> MatchearPendientesPorEanAsync(string? ean, CancellationToken cancellationToken);
     }
 }
