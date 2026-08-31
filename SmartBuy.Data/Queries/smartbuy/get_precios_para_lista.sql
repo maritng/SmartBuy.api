@@ -12,6 +12,9 @@
 --     barata (ROW_NUMBER por producto x cadena).
 --   * @productoids viaja como CSV parametrizado y se abre con string_to_array:
 --     un solo parámetro, sin depender del manejo de arrays del binder.
+--   * @cadenasids (CSV, nullable): restringe el universo a las cadenas
+--     accesibles para el usuario. En null, todas. Filtrar acá y no en C#
+--     mantiene intacta la lógica de agregación del servicio.
 WITH candidatos AS (
     SELECT pr.id             AS producto_id,
            pr.nombre         AS producto,
@@ -37,6 +40,8 @@ WITH candidatos AS (
     JOIN precio_vigente pv ON pv.publicacion_id = pub.id
     WHERE pr.activo = true
       AND pr.id = ANY (string_to_array(@productoids, ',')::bigint[])
+      AND (CAST(@cadenasids AS text) IS NULL
+           OR pub.cadena_id = ANY (string_to_array(CAST(@cadenasids AS text), ',')::bigint[]))
 )
 SELECT producto_id,
        producto,

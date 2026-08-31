@@ -5,7 +5,10 @@ namespace SmartBuy.Core.Interfaces.Repositories
 {
     public interface IRecomendacionRepository
     {
-        /// <summary>El mejor precio vigente de cada producto de la lista en cada cadena.</summary>
-        Task<StandarResponse<List<PrecioProductoCadena>>> GetPreciosParaListaAsync(IEnumerable<long> productoIds, CancellationToken cancellationToken);
+        /// <summary>
+        /// El mejor precio vigente de cada producto de la lista en cada cadena.
+        /// cadenasIds null o vacío = todas; con valores, solo esas cadenas.
+        /// </summary>
+        Task<StandarResponse<List<PrecioProductoCadena>>> GetPreciosParaListaAsync(IEnumerable<long> productoIds, IReadOnlyCollection<long>? cadenasIds, CancellationToken cancellationToken);
     }
 }

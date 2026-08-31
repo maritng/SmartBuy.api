@@ -4,6 +4,14 @@ namespace SmartBuy.Core.Models.Recomendacion
     public class ListaCompraRequest
     {
         public List<ListaCompraItem> Items { get; set; } = new();
+
+        /// <summary>
+        /// Cadenas accesibles para el usuario: todo el cálculo (reparto óptimo,
+        /// mejor cadena única, ahorro) se restringe a este universo. Null o vacío
+        /// = todas las cadenas. Un producto que solo existe en cadenas excluidas
+        /// cae en noDisponibles.
+        /// </summary>
+        public List<long>? CadenasIds { get; set; }
     }
 
     public class ListaCompraItem

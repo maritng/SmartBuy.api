@@ -17,13 +17,20 @@ namespace SmartBuy.Core.Services
         private const int MaxItems = 100;
         private const int MaxCantidad = 999;
 
+        private const int MaxCadenas = 20;
+
         private readonly IRecomendacionRepository _recomendacionRepository;
         private readonly IProductoRepository _productoRepository;
+        private readonly ICadenaRepository _cadenaRepository;
 
-        public RecomendacionServices(IRecomendacionRepository recomendacionRepository, IProductoRepository productoRepository)
+        public RecomendacionServices(
+            IRecomendacionRepository recomendacionRepository,
+            IProductoRepository productoRepository,
+            ICadenaRepository cadenaRepository)
         {
             _recomendacionRepository = recomendacionRepository;
             _productoRepository = productoRepository;
+            _cadenaRepository = cadenaRepository;
         }
 
         public async Task<StandarResponse<ListaCompraResumen>> ResolverListaAsync(ListaCompraRequest request, CancellationToken cancellationToken)
@@ -34,7 +41,23 @@ namespace SmartBuy.Core.Services
 
             var cantidades = request.Items.ToDictionary(i => i.ProductoId, i => i.Cantidad);
 
-            var precios = await _recomendacionRepository.GetPreciosParaListaAsync(cantidades.Keys, cancellationToken);
+            // Universo de cadenas accesibles: si viene el filtro, validar que
+            // todas existan (una cadena inexistente es error claro, no una
+            // respuesta vacía silenciosa).
+            var cadenasFiltro = request.CadenasIds is { Count: > 0 } ? request.CadenasIds.Distinct().ToList() : null;
+
+            if (cadenasFiltro != null)
+            {
+                var cadenas = await _cadenaRepository.GetAllCadenasAsync(cancellationToken);
+                if (!cadenas.Success)
+                    return new StandarResponse<ListaCompraResumen> { Success = false, Errors = cadenas.Errors };
+
+                var inexistentes = cadenasFiltro.Where(id => cadenas.Result == null || !cadenas.Result.Any(c => c.Id == id)).ToList();
+                if (inexistentes.Count > 0)
+                    return Fallo(new List<string> { $"Cadenas inexistentes: {string.Join(", ", inexistentes)}." });
+            }
+
+            var precios = await _recomendacionRepository.GetPreciosParaListaAsync(cantidades.Keys, cadenasFiltro, cancellationToken);
             if (!precios.Success)
                 return new StandarResponse<ListaCompraResumen> { Success = false, Errors = precios.Errors, Execution = precios.Execution };
 
@@ -143,6 +166,15 @@ namespace SmartBuy.Core.Services
             var repetidos = request.Items.GroupBy(i => i.ProductoId).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
             if (repetidos.Count > 0)
                 errores.Add($"Productos repetidos en la lista: {string.Join(", ", repetidos)}.");
+
+            if (request.CadenasIds is { Count: > 0 })
+            {
+                if (request.CadenasIds.Count > MaxCadenas)
+                    errores.Add($"cadenasIds supera el máximo de {MaxCadenas}.");
+
+                if (request.CadenasIds.Any(id => id <= 0))
+                    errores.Add("Todos los cadenasIds deben ser mayores a cero.");
+            }
 
             return errores;
         }

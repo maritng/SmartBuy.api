@@ -11,11 +11,12 @@ namespace SmartBuy.Data.Repositories
         {
         }
 
-        public Task<StandarResponse<List<PrecioProductoCadena>>> GetPreciosParaListaAsync(IEnumerable<long> productoIds, CancellationToken cancellationToken)
+        public Task<StandarResponse<List<PrecioProductoCadena>>> GetPreciosParaListaAsync(IEnumerable<long> productoIds, IReadOnlyCollection<long>? cadenasIds, CancellationToken cancellationToken)
             => ExecuteAsync<List<PrecioProductoCadena>>("SmartBuy.GetPreciosParaLista", new
             {
                 // CSV parametrizado; el SQL lo abre con string_to_array(...)::bigint[].
-                productoids = string.Join(',', productoIds)
+                productoids = string.Join(',', productoIds),
+                cadenasids = cadenasIds is { Count: > 0 } ? string.Join(',', cadenasIds) : null
             }, cancellationToken);
     }
 }
