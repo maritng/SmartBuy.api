@@ -9,6 +9,8 @@ namespace SmartBuy.Data.OrionCatalog
     //   SmartBuyOrionCatalog.Producto.cs
     //   SmartBuyOrionCatalog.Publicacion.cs
     //   SmartBuyOrionCatalog.Recomendacion.cs
+    //   SmartBuyOrionCatalog.Usuario.cs
+    //   SmartBuyOrionCatalog.Lista.cs
     [OrionCatalog("SmartBuy")]
     public sealed partial class SmartBuyOrionCatalog
     {

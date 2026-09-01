@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.0" />
     <PackageReference Include="Orion.Application" Version="1.8.0-local" />
     <PackageReference Include="Orion.Domain" Version="1.8.0-local" />
     <PackageReference Include="Orion.Infrastructure" Version="1.8.1-local" />

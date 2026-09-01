@@ -1,3 +1,4 @@
+using SmartBuy.Api.Auth;
 using SmartBuy.Api.Filters;
 using SmartBuy.Api.Workers;
 using SmartBuy.Core.Models.Bots;
@@ -40,6 +41,9 @@ namespace SmartBuy.Api.Extensions
             services.AddScoped<IProductoServices, ProductoServices>();
             services.AddScoped<IPublicacionServices, PublicacionServices>();
             services.AddScoped<IRecomendacionServices, RecomendacionServices>();
+            services.AddScoped<IAuthServices, AuthServices>();
+            services.AddScoped<IListaServices, ListaServices>();
+            services.AddScoped<JwtTokenService>();
             return services;
         }
 
@@ -51,6 +55,8 @@ namespace SmartBuy.Api.Extensions
             services.AddScoped<IProductoRepository, ProductoRepository>();
             services.AddScoped<IPublicacionRepository, PublicacionRepository>();
             services.AddScoped<IRecomendacionRepository, RecomendacionRepository>();
+            services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+            services.AddScoped<IListaRepository, ListaRepository>();
             return services;
         }
 
