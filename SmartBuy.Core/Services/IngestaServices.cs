@@ -144,6 +144,9 @@ namespace SmartBuy.Core.Services
             return new StandarResponse<RecalculoOfertasResumen> { Success = true, Result = resumen };
         }
 
+        public Task<StandarResponse<List<CapturaListado>>> GetCapturasAsync(int limite, CancellationToken cancellationToken)
+            => _ingestaRepository.GetCapturasAsync(Math.Clamp(limite, 1, 200), cancellationToken);
+
         /// <summary>
         /// Validación server-side completa: el payload viene de bots (o de quien
         /// tenga la API key), nunca se confía en el emisor. Si algo no cierra se

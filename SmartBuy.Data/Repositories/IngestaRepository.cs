@@ -40,6 +40,9 @@ namespace SmartBuy.Data.Repositories
         public Task<StandarResponse<CantidadDto>> CerrarCapturasAbandonadasAsync(int horasMaximas, CancellationToken cancellationToken)
             => ExecuteAsync<CantidadDto>("SmartBuy.CerrarCapturasAbandonadas", new { horasmaximas = horasMaximas }, cancellationToken);
 
+        public Task<StandarResponse<List<CapturaListado>>> GetCapturasAsync(int limite, CancellationToken cancellationToken)
+            => ExecuteAsync<List<CapturaListado>>("SmartBuy.GetCapturas", new { limite = limite }, cancellationToken);
+
         public Task<StandarResponse<List<TipoOfertaDto>>> GetTiposOfertaAsync(CancellationToken cancellationToken)
             => ExecuteAsync<List<TipoOfertaDto>>("SmartBuy.GetTiposOfertaDistintos", null, cancellationToken);
 

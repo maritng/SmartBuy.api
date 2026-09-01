@@ -22,6 +22,9 @@ namespace SmartBuy.Core.Interfaces.Repositories
         /// <summary>Cierra como 'error' las capturas en_proceso más viejas que horasMaximas (bot caído). Devuelve cuántas.</summary>
         Task<StandarResponse<CantidadDto>> CerrarCapturasAbandonadasAsync(int horasMaximas, CancellationToken cancellationToken);
 
+        /// <summary>Últimas corridas de bots (bitácora del panel de capturas), más recientes primero.</summary>
+        Task<StandarResponse<List<CapturaListado>>> GetCapturasAsync(int limite, CancellationToken cancellationToken);
+
         Task<StandarResponse<List<TipoOfertaDto>>> GetTiposOfertaAsync(CancellationToken cancellationToken);
 
         /// <summary>Pasada base del recálculo: min(lista, oferta directa) para todo el histórico.</summary>

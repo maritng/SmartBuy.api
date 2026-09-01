@@ -37,6 +37,13 @@ namespace SmartBuy.Data.OrionCatalog
         public Task IngestaFinalizarCaptura(OrionContext context) => Task.CompletedTask;
 
         [OrionAction(
+            "GetCapturas",
+            Query = "smartbuy/get_capturas.sql",
+            Provider = "PostgresSmartBuy",
+            ExecutorType = typeof(SqlOrionExecutor))]
+        public Task GetCapturas(OrionContext context) => Task.CompletedTask;
+
+        [OrionAction(
             "CerrarCapturasAbandonadas",
             Query = "smartbuy/cerrar_capturas_abandonadas.sql",
             Provider = "PostgresSmartBuy",

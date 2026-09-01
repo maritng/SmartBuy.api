@@ -9,6 +9,9 @@ namespace SmartBuy.Core.Interfaces.Services
 
         /// <summary>Re-computa precio_efectivo en todo el histórico (base + promos por cantidad reconocidas).</summary>
         Task<StandarResponse<RecalculoOfertasResumen>> RecalcularOfertasAsync(CancellationToken cancellationToken);
+
+        /// <summary>Últimas corridas de bots para el panel de capturas.</summary>
+        Task<StandarResponse<List<CapturaListado>>> GetCapturasAsync(int limite, CancellationToken cancellationToken);
     }
 
     /// <summary>Resumen de RecalcularOfertas.</summary>
