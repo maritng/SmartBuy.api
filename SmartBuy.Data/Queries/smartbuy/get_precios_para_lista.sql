@@ -18,6 +18,8 @@
 WITH candidatos AS (
     SELECT pr.id             AS producto_id,
            pr.nombre         AS producto,
+           pr.contenido_valor,
+           pr.contenido_unidad,
            pub.cadena_id,
            cad.nombre        AS cadena,
            pub.id            AS publicacion_id,
@@ -45,6 +47,8 @@ WITH candidatos AS (
 )
 SELECT producto_id,
        producto,
+       contenido_valor,
+       contenido_unidad,
        cadena_id,
        cadena,
        publicacion_id,

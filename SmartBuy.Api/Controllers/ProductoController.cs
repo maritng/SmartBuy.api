@@ -66,6 +66,17 @@ namespace SmartBuy.Api.Controllers
             return resultado.Success ? Ok(resultado) : BadRequest(resultado);
         }
 
+        /// <summary>
+        /// Retro-parseo de contenido: completa valor+unidad desde el gramaje del
+        /// nombre en todos los productos que no lo tienen. Nunca pisa curación.
+        /// </summary>
+        [HttpPost("CompletarContenidos")]
+        public async Task<IActionResult> CompletarContenidos(CancellationToken cancellationToken)
+        {
+            var resultado = await _productoServices.CompletarContenidosAsync(cancellationToken);
+            return resultado.Success ? Ok(resultado) : BadRequest(resultado);
+        }
+
         [HttpGet("GetAllMarcas")]
         public async Task<IActionResult> GetAllMarcas(CancellationToken cancellationToken)
         {

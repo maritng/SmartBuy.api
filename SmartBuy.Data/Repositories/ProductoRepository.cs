@@ -60,5 +60,16 @@ namespace SmartBuy.Data.Repositories
 
         public Task<StandarResponse<List<CategoriaNodo>>> GetAllCategoriasAsync(CancellationToken cancellationToken)
             => ExecuteAsync<List<CategoriaNodo>>("SmartBuy.GetAllCategorias", null, cancellationToken);
+
+        public Task<StandarResponse<List<ProductoSinContenido>>> GetProductosSinContenidoAsync(CancellationToken cancellationToken)
+            => ExecuteAsync<List<ProductoSinContenido>>("SmartBuy.GetProductosSinContenido", null, cancellationToken);
+
+        public Task<StandarResponse<IdDto>> ActualizarContenidoAsync(long id, decimal valor, string unidad, CancellationToken cancellationToken)
+            => ExecuteAsync<IdDto>("SmartBuy.ActualizarContenidoProducto", new
+            {
+                id = id,
+                contenidovalor = valor,
+                contenidounidad = unidad
+            }, cancellationToken);
     }
 }

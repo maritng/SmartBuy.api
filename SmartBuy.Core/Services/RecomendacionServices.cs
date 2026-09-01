@@ -74,6 +74,8 @@ namespace SmartBuy.Core.Services
                 var mejor = opciones.First();
                 var cantidad = cantidades[productoId];
 
+                var porUnidad = PrecioPorUnidad(mejor.PrecioEfectivo, mejor.ContenidoValor, mejor.ContenidoUnidad);
+
                 resumen.Items.Add(new RecomendacionItem
                 {
                     ProductoId = productoId,
@@ -85,6 +87,8 @@ namespace SmartBuy.Core.Services
                     PrecioUnitario = mejor.PrecioEfectivo,
                     TipoOferta = mejor.TipoOferta,
                     FechaPrecio = mejor.Fecha,
+                    PrecioPorUnidad = porUnidad?.Precio,
+                    UnidadBase = porUnidad?.Unidad,
                     Subtotal = mejor.PrecioEfectivo * cantidad,
                     CadenasComparadas = opciones.Count
                 });
@@ -145,6 +149,28 @@ namespace SmartBuy.Core.Services
             }
 
             return totales;
+        }
+
+        /// <summary>
+        /// Normaliza a unidad base ($/L, $/kg, $/un) para comparar presentaciones
+        /// distintas a ojo: ml y g se convierten a L y kg.
+        /// </summary>
+        private static (decimal Precio, string Unidad)? PrecioPorUnidad(decimal precioEfectivo, decimal? valor, string? unidad)
+        {
+            if (valor is null or <= 0 || string.IsNullOrEmpty(unidad))
+                return null;
+
+            (decimal precio, string unidadBase)? resultado = unidad switch
+            {
+                "L" => (precioEfectivo / valor.Value, "L"),
+                "ml" => (precioEfectivo / (valor.Value / 1000m), "L"),
+                "kg" => (precioEfectivo / valor.Value, "kg"),
+                "g" => (precioEfectivo / (valor.Value / 1000m), "kg"),
+                "un" => (precioEfectivo / valor.Value, "un"),
+                _ => null
+            };
+
+            return resultado == null ? null : (Math.Round(resultado.Value.precio, 2), resultado.Value.unidadBase);
         }
 
         private static List<string> Validar(ListaCompraRequest? request)

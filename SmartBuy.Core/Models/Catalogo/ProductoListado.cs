@@ -34,5 +34,27 @@ namespace SmartBuy.Core.Models.Catalogo
         public long ProductosCreados { get; set; }
 
         public long PublicacionesMatcheadas { get; set; }
+
+        /// <summary>Contenidos (valor+unidad) completados por el parser tras la generación.</summary>
+        public long ContenidosCompletados { get; set; }
+    }
+
+    /// <summary>Fila para CompletarContenidos: producto activo sin contenido cargado.</summary>
+    public class ProductoSinContenido
+    {
+        public long Id { get; set; }
+
+        public string Nombre { get; set; } = string.Empty;
+    }
+
+    /// <summary>Resumen de CompletarContenidos.</summary>
+    public class ContenidosResumen
+    {
+        public int Revisados { get; set; }
+
+        public int Completados { get; set; }
+
+        /// <summary>Sin gramaje reconocible en el nombre: quedan para curación manual.</summary>
+        public int SinReconocer { get; set; }
     }
 }

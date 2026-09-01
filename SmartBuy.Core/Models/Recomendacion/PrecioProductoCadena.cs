@@ -10,6 +10,10 @@ namespace SmartBuy.Core.Models.Recomendacion
 
         public string Producto { get; set; } = string.Empty;
 
+        public decimal? ContenidoValor { get; set; }
+
+        public string? ContenidoUnidad { get; set; }
+
         public long CadenaId { get; set; }
 
         public string Cadena { get; set; } = string.Empty;

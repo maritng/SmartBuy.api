@@ -18,6 +18,9 @@ namespace SmartBuy.Core.Interfaces.Services
 
         Task<StandarResponse<GeneracionPendientesResumen>> GenerarDesdePendientesAsync(int? minCadenas, CancellationToken cancellationToken);
 
+        /// <summary>Parsea el gramaje del nombre y completa el contenido de productos que no lo tienen.</summary>
+        Task<StandarResponse<ContenidosResumen>> CompletarContenidosAsync(CancellationToken cancellationToken);
+
         Task<StandarResponse<List<Marca>>> GetAllMarcasAsync(CancellationToken cancellationToken);
 
         Task<StandarResponse<IdDto>> CrearMarcaAsync(CrearMarcaRequest request, CancellationToken cancellationToken);

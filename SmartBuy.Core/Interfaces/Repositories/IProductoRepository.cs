@@ -27,5 +27,10 @@ namespace SmartBuy.Core.Interfaces.Repositories
         Task<StandarResponse<IdDto>> CrearMarcaAsync(string nombre, CancellationToken cancellationToken);
 
         Task<StandarResponse<List<CategoriaNodo>>> GetAllCategoriasAsync(CancellationToken cancellationToken);
+
+        Task<StandarResponse<List<ProductoSinContenido>>> GetProductosSinContenidoAsync(CancellationToken cancellationToken);
+
+        /// <summary>Solo completa si sigue null: la curación manual nunca se pisa.</summary>
+        Task<StandarResponse<IdDto>> ActualizarContenidoAsync(long id, decimal valor, string unidad, CancellationToken cancellationToken);
     }
 }

@@ -51,6 +51,20 @@ namespace SmartBuy.Data.OrionCatalog
         public Task GenerarProductosDesdePendientes(OrionContext context) => Task.CompletedTask;
 
         [OrionAction(
+            "GetProductosSinContenido",
+            Query = "smartbuy/get_productos_sin_contenido.sql",
+            Provider = "PostgresSmartBuy",
+            ExecutorType = typeof(SqlOrionExecutor))]
+        public Task GetProductosSinContenido(OrionContext context) => Task.CompletedTask;
+
+        [OrionAction(
+            "ActualizarContenidoProducto",
+            Query = "smartbuy/actualizar_contenido_producto.sql",
+            Provider = "PostgresSmartBuy",
+            ExecutorType = typeof(SqlOrionExecutor))]
+        public Task ActualizarContenidoProducto(OrionContext context) => Task.CompletedTask;
+
+        [OrionAction(
             "GetAllMarcas",
             Query = "smartbuy/get_all_marcas.sql",
             Provider = "PostgresSmartBuy",

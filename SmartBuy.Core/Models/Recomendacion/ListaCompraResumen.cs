@@ -34,6 +34,12 @@ namespace SmartBuy.Core.Models.Recomendacion
         /// <summary>Fecha del precio: si el bot no corre hace días, acá se nota.</summary>
         public DateOnly FechaPrecio { get; set; }
 
+        /// <summary>Precio normalizado por unidad base ($/L, $/kg, $/un). Null si el producto no tiene contenido cargado.</summary>
+        public decimal? PrecioPorUnidad { get; set; }
+
+        /// <summary>Unidad base del precio normalizado: L, kg o un.</summary>
+        public string? UnidadBase { get; set; }
+
         public decimal Subtotal { get; set; }
 
         /// <summary>En cuántas cadenas se encontró el producto (transparencia de la comparación).</summary>

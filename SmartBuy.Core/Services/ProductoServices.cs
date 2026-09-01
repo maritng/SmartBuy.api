@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
+using SmartBuy.Core.Common;
 using SmartBuy.Core.Common.Responses;
 using SmartBuy.Core.Interfaces.Repositories;
 using SmartBuy.Core.Interfaces.Services;
@@ -163,10 +164,53 @@ namespace SmartBuy.Core.Services
                 // (MatchearPendientesPorEan) es la recuperación si esto falla.
                 _logger.LogWarning("GenerarDesdePendientes: los productos se crearon pero el re-matcheo falló: {Errores}", string.Join(" | ", matcheo.Errors));
 
-            _logger.LogInformation("GenerarDesdePendientes (minCadenas={Min}): {Productos} productos creados, {Matcheadas} publicaciones matcheadas.",
-                minimo, resumen.ProductosCreados, resumen.PublicacionesMatcheadas);
+            // Los productos generados nacen sin contenido: el parser lo completa
+            // acá mismo desde el nombre (curado sigue false: la curación confirma).
+            var contenidos = await CompletarContenidosAsync(cancellationToken);
+            if (contenidos.Success && contenidos.Result != null)
+                resumen.ContenidosCompletados = contenidos.Result.Completados;
+
+            _logger.LogInformation("GenerarDesdePendientes (minCadenas={Min}): {Productos} productos creados, {Matcheadas} publicaciones matcheadas, {Contenidos} contenidos completados.",
+                minimo, resumen.ProductosCreados, resumen.PublicacionesMatcheadas, resumen.ContenidosCompletados);
 
             return new StandarResponse<GeneracionPendientesResumen> { Success = true, Result = resumen };
+        }
+
+        public async Task<StandarResponse<ContenidosResumen>> CompletarContenidosAsync(CancellationToken cancellationToken)
+        {
+            var pendientes = await _productoRepository.GetProductosSinContenidoAsync(cancellationToken);
+
+            if (!pendientes.Success)
+                return new StandarResponse<ContenidosResumen> { Success = false, Errors = pendientes.Errors };
+
+            var resumen = new ContenidosResumen();
+
+            foreach (var producto in pendientes.Result ?? new List<ProductoSinContenido>())
+            {
+                if (producto.Id <= 0)
+                    continue;
+
+                resumen.Revisados++;
+
+                var contenido = ContenidoParser.Parsear(producto.Nombre);
+
+                if (contenido == null)
+                {
+                    resumen.SinReconocer++;
+                    continue;
+                }
+
+                var actualizacion = await _productoRepository.ActualizarContenidoAsync(
+                    producto.Id, contenido.Value.Valor, contenido.Value.Unidad, cancellationToken);
+
+                if (actualizacion.Success && actualizacion.Result is { Id: > 0 })
+                    resumen.Completados++;
+            }
+
+            _logger.LogInformation("CompletarContenidos: {Revisados} revisados, {Completados} completados, {SinReconocer} sin gramaje reconocible.",
+                resumen.Revisados, resumen.Completados, resumen.SinReconocer);
+
+            return new StandarResponse<ContenidosResumen> { Success = true, Result = resumen };
         }
 
         public Task<StandarResponse<List<Marca>>> GetAllMarcasAsync(CancellationToken cancellationToken)
