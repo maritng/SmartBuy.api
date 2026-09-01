@@ -19,6 +19,10 @@ namespace SmartBuy.Api.Workers
         // contra la tabla captura, no contra este timer.
         private static readonly TimeSpan Intervalo = TimeSpan.FromHours(1);
 
+        // Una captura en_proceso más vieja que esto es un bot que murió a mitad
+        // de camino: el auto-saneo la cierra como error antes de cada revisión.
+        private const int HorasMaximasCaptura = 2;
+
         private readonly ILogger<OrquestadorCapturasWorker> _logger;
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly IOptions<BotsConfiguration> _botsConfiguration;
@@ -55,8 +59,30 @@ namespace SmartBuy.Api.Workers
             while (await timer.WaitForNextTickAsync(stoppingToken));
         }
 
+        /// <summary>Auto-saneo: cierra capturas huérfanas de corridas que murieron (crash, kill, corte).</summary>
+        private async Task CerrarCapturasAbandonadasAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var ingestaRepository = scope.ServiceProvider.GetRequiredService<IIngestaRepository>();
+
+                var cierre = await ingestaRepository.CerrarCapturasAbandonadasAsync(HorasMaximasCaptura, cancellationToken);
+
+                if (cierre.Success && cierre.Result is { Cantidad: > 0 })
+                    _logger.LogWarning("Auto-saneo: {Cantidad} capturas abandonadas (en_proceso > {Horas}h) cerradas como error.",
+                        cierre.Result.Cantidad, HorasMaximasCaptura);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error en el auto-saneo de capturas abandonadas.");
+            }
+        }
+
         private async Task RevisarCapturasPendientesAsync(CancellationToken cancellationToken)
         {
+            await CerrarCapturasAbandonadasAsync(cancellationToken);
+
             var cadenas = _botsConfiguration.Value.Cadenas.Where(c => c.Habilitado).ToList();
 
             if (cadenas.Count == 0)

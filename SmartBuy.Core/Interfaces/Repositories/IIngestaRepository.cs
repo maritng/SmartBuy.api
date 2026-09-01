@@ -12,11 +12,28 @@ namespace SmartBuy.Core.Interfaces.Repositories
         /// Registra un ítem en una sola sentencia atómica: upsert de la publicación
         /// (con matching automático por EAN) + inserción del precio del día.
         /// </summary>
-        Task<StandarResponse<ItemCapturaResultado>> RegistrarItemAsync(long capturaId, long cadenaId, IngestaItemRequest item, CancellationToken cancellationToken);
+        Task<StandarResponse<ItemCapturaResultado>> RegistrarItemAsync(long capturaId, long cadenaId, IngestaItemRequest item, decimal precioEfectivo, CancellationToken cancellationToken);
 
         Task<StandarResponse<object>> FinalizarCapturaAsync(long capturaId, string estado, int cantItems, string? errorDetalle, CancellationToken cancellationToken);
 
         /// <summary>Id de la captura 'ok' de hoy para la cadena (Id 0 si el bot aún no corrió).</summary>
         Task<StandarResponse<IdDto>> GetCapturaOkDeHoyAsync(long cadenaId, CancellationToken cancellationToken);
+
+        /// <summary>Cierra como 'error' las capturas en_proceso más viejas que horasMaximas (bot caído). Devuelve cuántas.</summary>
+        Task<StandarResponse<CantidadDto>> CerrarCapturasAbandonadasAsync(int horasMaximas, CancellationToken cancellationToken);
+
+        Task<StandarResponse<List<TipoOfertaDto>>> GetTiposOfertaAsync(CancellationToken cancellationToken);
+
+        /// <summary>Pasada base del recálculo: min(lista, oferta directa) para todo el histórico.</summary>
+        Task<StandarResponse<CantidadDto>> RecalcularOfertasBaseAsync(CancellationToken cancellationToken);
+
+        /// <summary>Aplica el factor de una promo por cantidad a todas las filas con ese descriptor.</summary>
+        Task<StandarResponse<CantidadDto>> RecalcularOfertasPorTipoAsync(string tipoOferta, decimal factor, CancellationToken cancellationToken);
+    }
+
+    /// <summary>Descriptor de promo distinto del histórico (para el recálculo por tipo).</summary>
+    public class TipoOfertaDto
+    {
+        public string TipoOferta { get; set; } = string.Empty;
     }
 }

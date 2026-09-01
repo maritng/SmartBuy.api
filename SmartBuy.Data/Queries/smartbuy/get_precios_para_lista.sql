@@ -28,10 +28,12 @@ WITH candidatos AS (
            pv.precio_lista,
            pv.precio_oferta,
            pv.tipo_oferta,
-           LEAST(pv.precio_lista, COALESCE(pv.precio_oferta, pv.precio_lista)) AS precio_efectivo,
+           -- precio_efectivo persistido (incluye promos por cantidad computadas);
+           -- COALESCE cubre filas históricas aún sin recalcular.
+           COALESCE(pv.precio_efectivo, LEAST(pv.precio_lista, COALESCE(pv.precio_oferta, pv.precio_lista))) AS precio_efectivo,
            ROW_NUMBER() OVER (
                PARTITION BY pr.id, pub.cadena_id
-               ORDER BY LEAST(pv.precio_lista, COALESCE(pv.precio_oferta, pv.precio_lista)),
+               ORDER BY COALESCE(pv.precio_efectivo, LEAST(pv.precio_lista, COALESCE(pv.precio_oferta, pv.precio_lista))),
                         pv.fecha DESC,
                         pub.id
            ) AS rn

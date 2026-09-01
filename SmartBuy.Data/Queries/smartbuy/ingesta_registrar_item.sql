@@ -46,9 +46,10 @@ pub AS (
     RETURNING id, estado_matching
 ),
 pre AS (
-    INSERT INTO precio (publicacion_id, captura_id, fecha, precio_lista, precio_oferta, tipo_oferta)
+    INSERT INTO precio (publicacion_id, captura_id, fecha, precio_lista, precio_oferta, tipo_oferta, precio_efectivo)
     SELECT pub.id, @capturaid, CURRENT_DATE, @preciolista,
-           CAST(@preciooferta AS numeric), CAST(@tipooferta AS text)
+           CAST(@preciooferta AS numeric), CAST(@tipooferta AS text),
+           CAST(@precioefectivo AS numeric)
     FROM pub
 )
 SELECT pub.id AS publicacion_id,

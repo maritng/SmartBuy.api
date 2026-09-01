@@ -142,7 +142,8 @@ namespace SmartBuy.Core.Services.Bots
                     EanPublicado = ean,
                     Url = string.IsNullOrWhiteSpace(urlRelativa) ? null : $"https://www.coto.com.ar/{urlRelativa.TrimStart('/')}",
                     PrecioLista = precioLista.Value,
-                    PrecioOferta = precioOferta.HasValue && precioOferta < precioLista ? precioOferta : null
+                    PrecioOferta = precioOferta.HasValue && precioOferta < precioLista ? precioOferta : null,
+                    TipoOferta = LeerPromoDeImagenes(data)
                 };
             }
         }
@@ -195,6 +196,45 @@ namespace SmartBuy.Core.Services.Bots
                 return null;
 
             return texto;
+        }
+
+        /// <summary>
+        /// Coto publica sus promos como nombres de imagen (saleImage1..3 en el
+        /// array de precios por sucursal). Mapeo empírico de los conocidos a un
+        /// descriptor que OfertaCalculator entiende; lo no mapeado (ej.
+        /// "NoAcumulable") se ignora. La tabla crece a medida que aparezcan.
+        /// </summary>
+        private static readonly (string Clave, string Descriptor)[] PromosConocidas =
+        {
+            ("2do80", "80% 2da unidad"),
+            ("2do70", "70% 2da unidad"),
+            ("2do50", "50% 2da unidad"),
+            ("2x1", "2x1"),
+            ("3x2", "3x2")
+        };
+
+        private static string? LeerPromoDeImagenes(JsonElement data)
+        {
+            if (!data.TryGetProperty("price", out var precios) || precios.ValueKind != JsonValueKind.Array || precios.GetArrayLength() == 0)
+                return null;
+
+            var encontradas = new List<string>();
+            var primera = precios[0];
+
+            foreach (var propiedad in new[] { "saleImage1", "saleImage2", "saleImage3" })
+            {
+                var imagen = LeerString(primera, propiedad);
+                if (string.IsNullOrWhiteSpace(imagen))
+                    continue;
+
+                foreach (var (clave, descriptor) in PromosConocidas)
+                {
+                    if (imagen.Contains(clave, StringComparison.OrdinalIgnoreCase) && !encontradas.Contains(descriptor))
+                        encontradas.Add(descriptor);
+                }
+            }
+
+            return encontradas.Count == 0 ? null : string.Join(" | ", encontradas);
         }
 
         private static string? LeerString(JsonElement elemento, string propiedad)

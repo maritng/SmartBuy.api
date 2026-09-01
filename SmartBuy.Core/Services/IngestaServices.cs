@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
+using SmartBuy.Core.Common;
 using SmartBuy.Core.Common.Responses;
 using SmartBuy.Core.Interfaces.Repositories;
 using SmartBuy.Core.Interfaces.Services;
@@ -56,7 +57,13 @@ namespace SmartBuy.Core.Services
 
             foreach (var item in request.Items)
             {
-                var resultado = await _ingestaRepository.RegistrarItemAsync(capturaId, request.CadenaId, item, cancellationToken);
+                // Precio efectivo por unidad comprada: min(lista, oferta directa,
+                // promo por cantidad computable). Queda persistido con el precio.
+                var precioEfectivo = Math.Min(
+                    Math.Min(item.PrecioLista, item.PrecioOferta ?? item.PrecioLista),
+                    OfertaCalculator.CalcularEfectivo(item.PrecioLista, item.TipoOferta) ?? item.PrecioLista);
+
+                var resultado = await _ingestaRepository.RegistrarItemAsync(capturaId, request.CadenaId, item, precioEfectivo, cancellationToken);
 
                 if (!resultado.Success || resultado.Result == null)
                 {
@@ -96,6 +103,45 @@ namespace SmartBuy.Core.Services
                     PublicacionesPendientes = pendientes
                 }
             };
+        }
+
+        public async Task<StandarResponse<RecalculoOfertasResumen>> RecalcularOfertasAsync(CancellationToken cancellationToken)
+        {
+            var resumen = new RecalculoOfertasResumen();
+
+            var basePasada = await _ingestaRepository.RecalcularOfertasBaseAsync(cancellationToken);
+            if (!basePasada.Success)
+                return new StandarResponse<RecalculoOfertasResumen> { Success = false, Errors = basePasada.Errors };
+
+            resumen.FilasBase = basePasada.Result?.Cantidad ?? 0;
+
+            var tipos = await _ingestaRepository.GetTiposOfertaAsync(cancellationToken);
+            if (!tipos.Success)
+                return new StandarResponse<RecalculoOfertasResumen> { Success = false, Errors = tipos.Errors };
+
+            foreach (var tipo in tipos.Result ?? new List<TipoOfertaDto>())
+            {
+                if (string.IsNullOrEmpty(tipo.TipoOferta))
+                    continue;
+
+                resumen.TiposRevisados++;
+
+                var factor = OfertaCalculator.CalcularFactor(tipo.TipoOferta);
+                if (factor == null)
+                    continue; // informativo, no computable: queda como está.
+
+                resumen.TiposComputables++;
+
+                var aplicacion = await _ingestaRepository.RecalcularOfertasPorTipoAsync(tipo.TipoOferta, factor.Value, cancellationToken);
+                if (aplicacion.Success)
+                    resumen.FilasConPromoAplicada += aplicacion.Result?.Cantidad ?? 0;
+            }
+
+            _logger.LogInformation(
+                "RecalcularOfertas: {Base} filas base, {Tipos} descriptores ({Computables} computables), {Aplicadas} filas con promo aplicada.",
+                resumen.FilasBase, resumen.TiposRevisados, resumen.TiposComputables, resumen.FilasConPromoAplicada);
+
+            return new StandarResponse<RecalculoOfertasResumen> { Success = true, Result = resumen };
         }
 
         /// <summary>

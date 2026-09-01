@@ -43,6 +43,18 @@ namespace SmartBuy.Api.Controllers
         }
 
         /// <summary>
+        /// Re-computa precio_efectivo en todo el histórico: la fórmula base más
+        /// las promos por cantidad que OfertaCalculator reconoce. Re-ejecutable
+        /// cada vez que el parser aprenda un patrón nuevo (el crudo nunca se pierde).
+        /// </summary>
+        [HttpPost("RecalcularOfertas")]
+        public async Task<IActionResult> RecalcularOfertas(CancellationToken cancellationToken)
+        {
+            var resultado = await _ingestaServices.RecalcularOfertasAsync(cancellationToken);
+            return resultado.Success ? Ok(resultado) : BadRequest(resultado);
+        }
+
+        /// <summary>
         /// Dispara el bot de una cadena a demanda (para pruebas y recuperaciones),
         /// sin esperar al orquestador. Ignora el flag Habilitado, que gobierna
         /// solo la corrida automática; sí exige que la cadena esté configurada.

@@ -36,6 +36,34 @@ namespace SmartBuy.Data.OrionCatalog
             ExecutorType = typeof(SqlOrionExecutor))]
         public Task IngestaFinalizarCaptura(OrionContext context) => Task.CompletedTask;
 
+        [OrionAction(
+            "CerrarCapturasAbandonadas",
+            Query = "smartbuy/cerrar_capturas_abandonadas.sql",
+            Provider = "PostgresSmartBuy",
+            ExecutorType = typeof(SqlOrionExecutor))]
+        public Task CerrarCapturasAbandonadas(OrionContext context) => Task.CompletedTask;
+
+        [OrionAction(
+            "GetTiposOfertaDistintos",
+            Query = "smartbuy/get_tipos_oferta_distintos.sql",
+            Provider = "PostgresSmartBuy",
+            ExecutorType = typeof(SqlOrionExecutor))]
+        public Task GetTiposOfertaDistintos(OrionContext context) => Task.CompletedTask;
+
+        [OrionAction(
+            "RecalcularOfertasBase",
+            Query = "smartbuy/recalcular_ofertas_base.sql",
+            Provider = "PostgresSmartBuy",
+            ExecutorType = typeof(SqlOrionExecutor))]
+        public Task RecalcularOfertasBase(OrionContext context) => Task.CompletedTask;
+
+        [OrionAction(
+            "RecalcularOfertasPorTipo",
+            Query = "smartbuy/recalcular_ofertas_por_tipo.sql",
+            Provider = "PostgresSmartBuy",
+            ExecutorType = typeof(SqlOrionExecutor))]
+        public Task RecalcularOfertasPorTipo(OrionContext context) => Task.CompletedTask;
+
         #endregion
     }
 }

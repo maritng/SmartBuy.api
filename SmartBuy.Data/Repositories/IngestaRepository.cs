@@ -19,7 +19,7 @@ namespace SmartBuy.Data.Repositories
                 fuente = fuente
             }, cancellationToken);
 
-        public Task<StandarResponse<ItemCapturaResultado>> RegistrarItemAsync(long capturaId, long cadenaId, IngestaItemRequest item, CancellationToken cancellationToken)
+        public Task<StandarResponse<ItemCapturaResultado>> RegistrarItemAsync(long capturaId, long cadenaId, IngestaItemRequest item, decimal precioEfectivo, CancellationToken cancellationToken)
             => ExecuteAsync<ItemCapturaResultado>("SmartBuy.IngestaRegistrarItem", new
             {
                 capturaid = capturaId,
@@ -30,11 +30,28 @@ namespace SmartBuy.Data.Repositories
                 url = item.Url,
                 preciolista = item.PrecioLista,
                 preciooferta = item.PrecioOferta,
-                tipooferta = item.TipoOferta
+                tipooferta = item.TipoOferta,
+                precioefectivo = precioEfectivo
             }, cancellationToken);
 
         public Task<StandarResponse<IdDto>> GetCapturaOkDeHoyAsync(long cadenaId, CancellationToken cancellationToken)
             => ExecuteAsync<IdDto>("SmartBuy.IngestaCapturaOkDeHoy", new { cadenaid = cadenaId }, cancellationToken);
+
+        public Task<StandarResponse<CantidadDto>> CerrarCapturasAbandonadasAsync(int horasMaximas, CancellationToken cancellationToken)
+            => ExecuteAsync<CantidadDto>("SmartBuy.CerrarCapturasAbandonadas", new { horasmaximas = horasMaximas }, cancellationToken);
+
+        public Task<StandarResponse<List<TipoOfertaDto>>> GetTiposOfertaAsync(CancellationToken cancellationToken)
+            => ExecuteAsync<List<TipoOfertaDto>>("SmartBuy.GetTiposOfertaDistintos", null, cancellationToken);
+
+        public Task<StandarResponse<CantidadDto>> RecalcularOfertasBaseAsync(CancellationToken cancellationToken)
+            => ExecuteAsync<CantidadDto>("SmartBuy.RecalcularOfertasBase", null, cancellationToken);
+
+        public Task<StandarResponse<CantidadDto>> RecalcularOfertasPorTipoAsync(string tipoOferta, decimal factor, CancellationToken cancellationToken)
+            => ExecuteAsync<CantidadDto>("SmartBuy.RecalcularOfertasPorTipo", new
+            {
+                tipooferta = tipoOferta,
+                factor = factor
+            }, cancellationToken);
 
         public Task<StandarResponse<object>> FinalizarCapturaAsync(long capturaId, string estado, int cantItems, string? errorDetalle, CancellationToken cancellationToken)
             => ExecuteAsync<object>("SmartBuy.IngestaFinalizarCaptura", new

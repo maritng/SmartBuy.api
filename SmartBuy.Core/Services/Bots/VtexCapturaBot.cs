@@ -145,7 +145,8 @@ namespace SmartBuy.Core.Services.Bots
                     NombrePublicado = nombre.Length > 500 ? nombre[..500] : nombre,
                     EanPublicado = string.IsNullOrWhiteSpace(ean) ? null : ean,
                     PrecioLista = precioLista.Value,
-                    PrecioOferta = precio.HasValue && precio < precioLista ? precio : null
+                    PrecioOferta = precio.HasValue && precio < precioLista ? precio : null,
+                    TipoOferta = LeerTeasers(oferta)
                 };
             }
         }
@@ -156,6 +157,46 @@ namespace SmartBuy.Core.Services.Bots
                 return valor.GetDecimal();
 
             return null;
+        }
+
+        private static string? LeerString(JsonElement elemento, string propiedad)
+            => elemento.TryGetProperty(propiedad, out var valor) && valor.ValueKind == JsonValueKind.String ? valor.GetString() : null;
+
+        /// <summary>
+        /// Descriptores de promo del commertialOffer: PromotionTeasers trae Name
+        /// limpio; Teasers usa claves serializadas raras ("&lt;Name&gt;k__BackingField").
+        /// Se capturan como texto crudo informativo; OfertaCalculator decide qué
+        /// es computable.
+        /// </summary>
+        private static string? LeerTeasers(JsonElement oferta)
+        {
+            var nombres = new List<string>();
+
+            if (oferta.TryGetProperty("PromotionTeasers", out var promos) && promos.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var teaser in promos.EnumerateArray())
+                {
+                    var nombre = LeerString(teaser, "Name");
+                    if (!string.IsNullOrWhiteSpace(nombre))
+                        nombres.Add(nombre);
+                }
+            }
+
+            if (nombres.Count == 0 && oferta.TryGetProperty("Teasers", out var teasers) && teasers.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var teaser in teasers.EnumerateArray())
+                {
+                    var nombre = LeerString(teaser, "<Name>k__BackingField");
+                    if (!string.IsNullOrWhiteSpace(nombre))
+                        nombres.Add(nombre);
+                }
+            }
+
+            if (nombres.Count == 0)
+                return null;
+
+            var texto = string.Join(" | ", nombres.Distinct());
+            return texto.Length > 200 ? texto[..200] : texto;
         }
     }
 }
