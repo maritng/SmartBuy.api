@@ -1,6 +1,9 @@
-# Entorno de desarrollo local de SmartBuy.
-# Etapa 1: solo la base de datos PostgreSQL.
-# Uso: docker compose up -d
+# Entorno local completo de SmartBuy: base + API (con los bots adentro) + front.
+# Uso: docker compose up -d --build
+#
+# Con la API siempre encendida, el orquestador captura las 7 cadenas una vez
+# por día, solo. La app queda en http://localhost:4300 y la API en
+# http://localhost:5100 (el flujo de desarrollo con VS en el 5080 no se toca).
 services:
   db:
     image: postgres:17
@@ -23,6 +26,32 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: SmartBuy.Api/Dockerfile
+    container_name: smartbuy-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      # Dentro de la red de compose, la base no es localhost: es el servicio db.
+      Orion__Providers__PostgresSmartBuy__ConnectionString: "Host=db;Port=5432;Database=SmartBuy;Username=smart;Password=smart123;"
+    ports:
+      - "5100:8080"
+
+  front:
+    build:
+      context: ../SmartBuy.UI
+    container_name: smartbuy-front
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "4300:80"
 
 volumes:
   smartbuy-pgdata:
