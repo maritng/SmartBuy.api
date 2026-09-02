@@ -1,6 +1,7 @@
 using SmartBuy.Core.Common.Responses;
 using SmartBuy.Core.Models;
 using SmartBuy.Core.Models.Catalogo;
+using SmartBuy.Core.Models.Historico;
 
 namespace SmartBuy.Core.Interfaces.Repositories
 {
@@ -21,6 +22,9 @@ namespace SmartBuy.Core.Interfaces.Repositories
         /// menos minCadenas cadenas. Devuelve cuántos creó.
         /// </summary>
         Task<StandarResponse<CantidadDto>> GenerarDesdePendientesAsync(int minCadenas, CancellationToken cancellationToken);
+
+        /// <summary>Mejor precio por día y cadena del producto en los últimos N días.</summary>
+        Task<StandarResponse<List<HistoricoPrecioPunto>>> GetHistoricoProductoAsync(long productoId, int dias, CancellationToken cancellationToken);
 
         Task<StandarResponse<List<Marca>>> GetAllMarcasAsync(CancellationToken cancellationToken);
 

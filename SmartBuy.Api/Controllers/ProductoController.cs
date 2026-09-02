@@ -77,6 +77,17 @@ namespace SmartBuy.Api.Controllers
             return resultado.Success ? Ok(resultado) : BadRequest(resultado);
         }
 
+        /// <summary>
+        /// La historia de precios del producto (mejor precio por día y cadena,
+        /// últimos N días, default 90) + la señal "¿conviene comprar hoy?".
+        /// </summary>
+        [HttpGet("GetHistorico")]
+        public async Task<IActionResult> GetHistorico([FromQuery] long productoId, [FromQuery] int? dias, CancellationToken cancellationToken)
+        {
+            var historico = await _productoServices.GetHistoricoAsync(productoId, dias, cancellationToken);
+            return historico.Success ? Ok(historico) : BadRequest(historico);
+        }
+
         [HttpGet("GetAllMarcas")]
         public async Task<IActionResult> GetAllMarcas(CancellationToken cancellationToken)
         {

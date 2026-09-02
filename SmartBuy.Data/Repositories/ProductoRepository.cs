@@ -2,6 +2,7 @@ using SmartBuy.Core.Common.Responses;
 using SmartBuy.Core.Interfaces.Repositories;
 using SmartBuy.Core.Models;
 using SmartBuy.Core.Models.Catalogo;
+using SmartBuy.Core.Models.Historico;
 using Orion.Application.Abstractions;
 
 namespace SmartBuy.Data.Repositories
@@ -51,6 +52,13 @@ namespace SmartBuy.Data.Repositories
 
         public Task<StandarResponse<CantidadDto>> GenerarDesdePendientesAsync(int minCadenas, CancellationToken cancellationToken)
             => ExecuteAsync<CantidadDto>("SmartBuy.GenerarProductosDesdePendientes", new { mincadenas = minCadenas }, cancellationToken);
+
+        public Task<StandarResponse<List<HistoricoPrecioPunto>>> GetHistoricoProductoAsync(long productoId, int dias, CancellationToken cancellationToken)
+            => ExecuteAsync<List<HistoricoPrecioPunto>>("SmartBuy.GetHistoricoProducto", new
+            {
+                productoid = productoId,
+                dias = dias
+            }, cancellationToken);
 
         public Task<StandarResponse<List<Marca>>> GetAllMarcasAsync(CancellationToken cancellationToken)
             => ExecuteAsync<List<Marca>>("SmartBuy.GetAllMarcas", null, cancellationToken);

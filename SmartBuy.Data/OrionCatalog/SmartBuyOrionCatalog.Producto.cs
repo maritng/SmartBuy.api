@@ -65,6 +65,13 @@ namespace SmartBuy.Data.OrionCatalog
         public Task ActualizarContenidoProducto(OrionContext context) => Task.CompletedTask;
 
         [OrionAction(
+            "GetHistoricoProducto",
+            Query = "smartbuy/get_historico_producto.sql",
+            Provider = "PostgresSmartBuy",
+            ExecutorType = typeof(SqlOrionExecutor))]
+        public Task GetHistoricoProducto(OrionContext context) => Task.CompletedTask;
+
+        [OrionAction(
             "GetAllMarcas",
             Query = "smartbuy/get_all_marcas.sql",
             Provider = "PostgresSmartBuy",

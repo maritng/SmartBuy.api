@@ -66,6 +66,7 @@ namespace SmartBuy.Tests
             public Task<StandarResponse<IdDto>> CrearMarcaAsync(string nombre, CancellationToken ct) => throw new NotImplementedException();
             public Task<StandarResponse<List<CategoriaNodo>>> GetAllCategoriasAsync(CancellationToken ct) => throw new NotImplementedException();
             public Task<StandarResponse<List<ProductoSinContenido>>> GetProductosSinContenidoAsync(CancellationToken ct) => throw new NotImplementedException();
+            public Task<StandarResponse<List<Core.Models.Historico.HistoricoPrecioPunto>>> GetHistoricoProductoAsync(long productoId, int dias, CancellationToken ct) => throw new NotImplementedException();
             public Task<StandarResponse<IdDto>> ActualizarContenidoAsync(long id, decimal valor, string unidad, CancellationToken ct) => throw new NotImplementedException();
         }
 

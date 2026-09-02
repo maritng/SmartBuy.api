@@ -6,6 +6,7 @@ using SmartBuy.Core.Interfaces.Repositories;
 using SmartBuy.Core.Interfaces.Services;
 using SmartBuy.Core.Models;
 using SmartBuy.Core.Models.Catalogo;
+using SmartBuy.Core.Models.Historico;
 
 namespace SmartBuy.Core.Services
 {
@@ -62,6 +63,54 @@ namespace SmartBuy.Core.Services
                 return Fallo<ProductoDetalle>($"No existe el producto {id}.");
 
             return new StandarResponse<ProductoDetalle> { Success = true, Result = producto, Execution = respuesta.Execution };
+        }
+
+        public async Task<StandarResponse<HistoricoProducto>> GetHistoricoAsync(long productoId, int? dias, CancellationToken cancellationToken)
+        {
+            if (productoId <= 0)
+                return Fallo<HistoricoProducto>("El id de producto es obligatorio.");
+
+            var ventana = Math.Clamp(dias ?? 90, 7, 365);
+
+            var producto = await GetProductoByIdAsync(productoId, cancellationToken);
+            if (!producto.Success || producto.Result == null)
+                return new StandarResponse<HistoricoProducto> { Success = false, Errors = producto.Errors };
+
+            var puntos = await _productoRepository.GetHistoricoProductoAsync(productoId, ventana, cancellationToken);
+            if (!puntos.Success)
+                return new StandarResponse<HistoricoProducto> { Success = false, Errors = puntos.Errors, Execution = puntos.Execution };
+
+            var filas = puntos.Result ?? new List<HistoricoPrecioPunto>();
+
+            var series = filas
+                .GroupBy(p => new { p.CadenaId, p.Cadena })
+                .Select(g => new HistoricoSerieCadena
+                {
+                    CadenaId = g.Key.CadenaId,
+                    Cadena = g.Key.Cadena,
+                    Puntos = g.OrderBy(p => p.Fecha)
+                        .Select(p => new HistoricoPunto { Fecha = p.Fecha, Precio = p.Precio })
+                        .ToList()
+                })
+                .OrderBy(s => s.Cadena)
+                .ToList();
+
+            // La señal se calcula sobre el mejor precio diario ENTRE cadenas:
+            // lo que efectivamente pagarías ese día repartiendo.
+            var mejoresPorDia = filas
+                .Select(p => new HistoricoPunto { Fecha = p.Fecha, Precio = p.Precio })
+                .ToList();
+
+            var resumen = new HistoricoProducto
+            {
+                ProductoId = productoId,
+                Producto = producto.Result.Nombre,
+                Dias = ventana,
+                Series = series,
+                Senal = SenalCompra.Calcular(mejoresPorDia, ventana)
+            };
+
+            return new StandarResponse<HistoricoProducto> { Success = true, Result = resumen };
         }
 
         public async Task<StandarResponse<IdDto>> CrearProductoAsync(GuardarProductoRequest request, CancellationToken cancellationToken)

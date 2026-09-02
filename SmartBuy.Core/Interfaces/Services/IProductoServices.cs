@@ -1,6 +1,7 @@
 using SmartBuy.Core.Common.Responses;
 using SmartBuy.Core.Models;
 using SmartBuy.Core.Models.Catalogo;
+using SmartBuy.Core.Models.Historico;
 
 namespace SmartBuy.Core.Interfaces.Services
 {
@@ -20,6 +21,9 @@ namespace SmartBuy.Core.Interfaces.Services
 
         /// <summary>Parsea el gramaje del nombre y completa el contenido de productos que no lo tienen.</summary>
         Task<StandarResponse<ContenidosResumen>> CompletarContenidosAsync(CancellationToken cancellationToken);
+
+        /// <summary>La historia de precios del producto (serie por cadena) + la señal "¿conviene comprar hoy?".</summary>
+        Task<StandarResponse<HistoricoProducto>> GetHistoricoAsync(long productoId, int? dias, CancellationToken cancellationToken);
 
         Task<StandarResponse<List<Marca>>> GetAllMarcasAsync(CancellationToken cancellationToken);
 
