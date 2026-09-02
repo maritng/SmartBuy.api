@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartBuy.Core", "SmartBuy.C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartBuy.Data", "SmartBuy.Data\SmartBuy.Data.csproj", "{4996EF5F-5D87-452C-82F5-FD479F6B683E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartBuy.Tests", "SmartBuy.Tests\SmartBuy.Tests.csproj", "{AB49FEB9-8116-4808-981C-3394AF571240}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,6 +57,18 @@ Global
 		{4996EF5F-5D87-452C-82F5-FD479F6B683E}.Release|x64.Build.0 = Release|Any CPU
 		{4996EF5F-5D87-452C-82F5-FD479F6B683E}.Release|x86.ActiveCfg = Release|Any CPU
 		{4996EF5F-5D87-452C-82F5-FD479F6B683E}.Release|x86.Build.0 = Release|Any CPU
+		{AB49FEB9-8116-4808-981C-3394AF571240}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AB49FEB9-8116-4808-981C-3394AF571240}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AB49FEB9-8116-4808-981C-3394AF571240}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{AB49FEB9-8116-4808-981C-3394AF571240}.Debug|x64.Build.0 = Debug|Any CPU
+		{AB49FEB9-8116-4808-981C-3394AF571240}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{AB49FEB9-8116-4808-981C-3394AF571240}.Debug|x86.Build.0 = Debug|Any CPU
+		{AB49FEB9-8116-4808-981C-3394AF571240}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AB49FEB9-8116-4808-981C-3394AF571240}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AB49FEB9-8116-4808-981C-3394AF571240}.Release|x64.ActiveCfg = Release|Any CPU
+		{AB49FEB9-8116-4808-981C-3394AF571240}.Release|x64.Build.0 = Release|Any CPU
+		{AB49FEB9-8116-4808-981C-3394AF571240}.Release|x86.ActiveCfg = Release|Any CPU
+		{AB49FEB9-8116-4808-981C-3394AF571240}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
