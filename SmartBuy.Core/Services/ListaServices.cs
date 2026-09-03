@@ -1,7 +1,9 @@
+using SmartBuy.Core.Common;
 using SmartBuy.Core.Common.Responses;
 using SmartBuy.Core.Interfaces.Repositories;
 using SmartBuy.Core.Interfaces.Services;
 using SmartBuy.Core.Models;
+using SmartBuy.Core.Models.Historico;
 using SmartBuy.Core.Models.Listas;
 using SmartBuy.Core.Models.Usuarios;
 
@@ -123,6 +125,26 @@ namespace SmartBuy.Core.Services
                 return Fallo<IdDto>($"La lista {listaId} no existe o no es tuya.");
 
             return borrado;
+        }
+
+        public async Task<StandarResponse<InflacionCanastaResumen>> GetInflacionAsync(long usuarioId, long listaId, int? dias, CancellationToken cancellationToken)
+        {
+            var ventana = Math.Clamp(dias ?? 90, 7, 365);
+
+            // Reusa GetLista: valida propiedad (anti-IDOR) y trae nombre + items.
+            var lista = await GetListaAsync(usuarioId, listaId, cancellationToken);
+            if (!lista.Success || lista.Result == null)
+                return new StandarResponse<InflacionCanastaResumen> { Success = false, Errors = lista.Errors };
+
+            var filas = await _listaRepository.GetInflacionListaAsync(usuarioId, listaId, ventana, cancellationToken);
+            if (!filas.Success)
+                return new StandarResponse<InflacionCanastaResumen> { Success = false, Errors = filas.Errors, Execution = filas.Execution };
+
+            var resumen = InflacionCanasta.Calcular(lista.Result.Items, filas.Result ?? new List<InflacionPrecioFila>(), ventana);
+            resumen.ListaId = lista.Result.Id;
+            resumen.Lista = lista.Result.Nombre;
+
+            return new StandarResponse<InflacionCanastaResumen> { Success = true, Result = resumen };
         }
 
         public async Task<StandarResponse<List<long>>> GetMisCadenasAsync(long usuarioId, CancellationToken cancellationToken)

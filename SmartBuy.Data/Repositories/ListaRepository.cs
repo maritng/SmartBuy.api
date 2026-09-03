@@ -1,6 +1,7 @@
 using SmartBuy.Core.Common.Responses;
 using SmartBuy.Core.Interfaces.Repositories;
 using SmartBuy.Core.Models;
+using SmartBuy.Core.Models.Historico;
 using SmartBuy.Core.Models.Listas;
 using Orion.Application.Abstractions;
 
@@ -50,6 +51,14 @@ namespace SmartBuy.Data.Repositories
             {
                 usuarioid = usuarioId,
                 listaid = listaId
+            }, cancellationToken);
+
+        public Task<StandarResponse<List<InflacionPrecioFila>>> GetInflacionListaAsync(long usuarioId, long listaId, int dias, CancellationToken cancellationToken)
+            => ExecuteAsync<List<InflacionPrecioFila>>("SmartBuy.GetInflacionLista", new
+            {
+                usuarioid = usuarioId,
+                listaid = listaId,
+                dias = dias
             }, cancellationToken);
     }
 }

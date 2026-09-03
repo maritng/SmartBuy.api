@@ -38,6 +38,17 @@ namespace SmartBuy.Api.Controllers
             return lista.Success ? Ok(lista) : NotFound(lista);
         }
 
+        /// <summary>
+        /// La inflación personal de la lista: serie diaria del costo total óptimo
+        /// (últimos N días, default 90) y la variación entre días completos.
+        /// </summary>
+        [HttpGet("GetInflacion")]
+        public async Task<IActionResult> GetInflacion([FromQuery] long listaId, [FromQuery] int? dias, CancellationToken cancellationToken)
+        {
+            var inflacion = await _listaServices.GetInflacionAsync(UsuarioId, listaId, dias, cancellationToken);
+            return inflacion.Success ? Ok(inflacion) : BadRequest(inflacion);
+        }
+
         [HttpPost("CrearLista")]
         public async Task<IActionResult> CrearLista([FromBody] GuardarListaRequest request, CancellationToken cancellationToken)
         {

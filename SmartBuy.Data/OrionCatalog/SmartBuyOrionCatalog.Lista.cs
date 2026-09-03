@@ -23,6 +23,13 @@ namespace SmartBuy.Data.OrionCatalog
         public Task GetListaItems(OrionContext context) => Task.CompletedTask;
 
         [OrionAction(
+            "GetInflacionLista",
+            Query = "smartbuy/get_inflacion_lista.sql",
+            Provider = "PostgresSmartBuy",
+            ExecutorType = typeof(SqlOrionExecutor))]
+        public Task GetInflacionLista(OrionContext context) => Task.CompletedTask;
+
+        [OrionAction(
             "CrearLista",
             Query = "smartbuy/crear_lista.sql",
             Provider = "PostgresSmartBuy",
