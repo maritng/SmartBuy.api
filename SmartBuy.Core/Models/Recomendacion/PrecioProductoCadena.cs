@@ -22,6 +22,12 @@ namespace SmartBuy.Core.Models.Recomendacion
 
         public string NombrePublicado { get; set; } = string.Empty;
 
+        /// <summary>SKU en la cadena: es lo que entiende el carrito del sitio (VTEX).</summary>
+        public string CodigoExterno { get; set; } = string.Empty;
+
+        /// <summary>Página del producto en el sitio de la cadena, si el bot la capturó.</summary>
+        public string? Url { get; set; }
+
         public DateOnly Fecha { get; set; }
 
         public decimal PrecioLista { get; set; }

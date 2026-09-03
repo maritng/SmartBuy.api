@@ -9,6 +9,23 @@ namespace SmartBuy.Core.Models.Recomendacion
         public List<ProductoNoDisponible> NoDisponibles { get; set; } = new();
 
         public RecomendacionTotales Totales { get; set; } = new();
+
+        /// <summary>
+        /// Deep links de carrito: un link por cadena del reparto que soporte
+        /// carga por URL (VTEX), con todos sus productos y cantidades. Las
+        /// cadenas sin soporte simplemente no aparecen.
+        /// </summary>
+        public List<CarritoCadena> Carritos { get; set; } = new();
+    }
+
+    /// <summary>Un click que arma el carrito real de la cadena con lo que va ahí.</summary>
+    public class CarritoCadena
+    {
+        public long CadenaId { get; set; }
+
+        public string Cadena { get; set; } = string.Empty;
+
+        public string Url { get; set; } = string.Empty;
     }
 
     public class RecomendacionItem
@@ -25,6 +42,12 @@ namespace SmartBuy.Core.Models.Recomendacion
         public string Cadena { get; set; } = string.Empty;
 
         public string NombrePublicado { get; set; } = string.Empty;
+
+        /// <summary>SKU en la cadena elegida (alimenta el deep link de carrito).</summary>
+        public string CodigoExterno { get; set; } = string.Empty;
+
+        /// <summary>Página del producto en el sitio de la cadena elegida, si está capturada.</summary>
+        public string? Url { get; set; }
 
         public decimal PrecioUnitario { get; set; }
 

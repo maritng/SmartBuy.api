@@ -1,6 +1,8 @@
+using SmartBuy.Core.Common;
 using SmartBuy.Core.Common.Responses;
 using SmartBuy.Core.Interfaces.Repositories;
 using SmartBuy.Core.Interfaces.Services;
+using SmartBuy.Core.Models.Bots;
 using SmartBuy.Core.Models.Recomendacion;
 
 namespace SmartBuy.Core.Services
@@ -22,15 +24,18 @@ namespace SmartBuy.Core.Services
         private readonly IRecomendacionRepository _recomendacionRepository;
         private readonly IProductoRepository _productoRepository;
         private readonly ICadenaRepository _cadenaRepository;
+        private readonly BotsConfiguration _botsConfiguration;
 
         public RecomendacionServices(
             IRecomendacionRepository recomendacionRepository,
             IProductoRepository productoRepository,
-            ICadenaRepository cadenaRepository)
+            ICadenaRepository cadenaRepository,
+            BotsConfiguration botsConfiguration)
         {
             _recomendacionRepository = recomendacionRepository;
             _productoRepository = productoRepository;
             _cadenaRepository = cadenaRepository;
+            _botsConfiguration = botsConfiguration;
         }
 
         public async Task<StandarResponse<ListaCompraResumen>> ResolverListaAsync(ListaCompraRequest request, CancellationToken cancellationToken)
@@ -84,6 +89,8 @@ namespace SmartBuy.Core.Services
                     CadenaId = mejor.CadenaId,
                     Cadena = mejor.Cadena,
                     NombrePublicado = mejor.NombrePublicado,
+                    CodigoExterno = mejor.CodigoExterno,
+                    Url = mejor.Url,
                     PrecioUnitario = mejor.PrecioEfectivo,
                     TipoOferta = mejor.TipoOferta,
                     FechaPrecio = mejor.Fecha,
@@ -108,8 +115,34 @@ namespace SmartBuy.Core.Services
             }
 
             resumen.Totales = CalcularTotales(resumen.Items, porProducto, cantidades);
+            resumen.Carritos = ArmarCarritos(resumen.Items);
 
             return new StandarResponse<ListaCompraResumen> { Success = true, Result = resumen };
+        }
+
+        /// <summary>
+        /// Un deep link de carrito por cadena del reparto, solo para plataformas
+        /// que soportan carga por URL (VTEX). Cadena sin soporte = sin botón.
+        /// </summary>
+        private List<CarritoCadena> ArmarCarritos(List<RecomendacionItem> items)
+        {
+            var carritos = new List<CarritoCadena>();
+
+            foreach (var grupo in items.GroupBy(i => new { i.CadenaId, i.Cadena }))
+            {
+                var config = _botsConfiguration.Cadenas.FirstOrDefault(c => c.CadenaId == grupo.Key.CadenaId);
+                if (config == null || !string.Equals(config.Tipo, "vtex", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                var url = CarritoLinkBuilder.ArmarVtex(
+                    config.BaseUrl,
+                    grupo.Select(i => (i.CodigoExterno, i.Cantidad)).ToList());
+
+                if (url != null)
+                    carritos.Add(new CarritoCadena { CadenaId = grupo.Key.CadenaId, Cadena = grupo.Key.Cadena, Url = url });
+            }
+
+            return carritos.OrderBy(c => c.Cadena).ToList();
         }
 
         private static RecomendacionTotales CalcularTotales(

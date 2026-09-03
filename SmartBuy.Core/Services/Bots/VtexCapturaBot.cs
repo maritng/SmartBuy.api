@@ -68,7 +68,7 @@ namespace SmartBuy.Core.Services.Bots
                         foreach (var producto in doc.RootElement.EnumerateArray())
                         {
                             cantidadPagina++;
-                            MapearProducto(producto, items);
+                            MapearProducto(producto, items, config.BaseUrl.TrimEnd('/'));
                         }
                     }
 
@@ -100,12 +100,18 @@ namespace SmartBuy.Core.Services.Bots
         /// Un "product" VTEX tiene variantes (items), cada una con su SKU, EAN y
         /// precios propios. Se toman las disponibles con precio de lista válido.
         /// </summary>
-        private static void MapearProducto(JsonElement producto, Dictionary<string, IngestaItemRequest> destino)
+        private static void MapearProducto(JsonElement producto, Dictionary<string, IngestaItemRequest> destino, string baseUrl)
         {
             if (!producto.TryGetProperty("items", out var variantes) || variantes.ValueKind != JsonValueKind.Array)
                 return;
 
             var nombreProducto = producto.TryGetProperty("productName", out var pn) ? pn.GetString() : null;
+
+            // linkText es el slug de la página del producto: {sitio}/{linkText}/p.
+            // Alimenta los deep links del resultado; la ingesta upsertea, así que
+            // las publicaciones viejas se completan solas en la próxima corrida.
+            var linkText = producto.TryGetProperty("linkText", out var lt) ? lt.GetString() : null;
+            var urlProducto = string.IsNullOrWhiteSpace(linkText) ? null : $"{baseUrl}/{linkText}/p";
 
             foreach (var variante in variantes.EnumerateArray())
             {
@@ -144,6 +150,7 @@ namespace SmartBuy.Core.Services.Bots
                     CodigoExterno = sku,
                     NombrePublicado = nombre.Length > 500 ? nombre[..500] : nombre,
                     EanPublicado = string.IsNullOrWhiteSpace(ean) ? null : ean,
+                    Url = urlProducto,
                     PrecioLista = precioLista.Value,
                     PrecioOferta = precio.HasValue && precio < precioLista ? precio : null,
                     TipoOferta = LeerTeasers(oferta)

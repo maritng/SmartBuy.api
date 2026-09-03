@@ -1,6 +1,7 @@
 using SmartBuy.Core.Common.Responses;
 using SmartBuy.Core.Interfaces.Repositories;
 using SmartBuy.Core.Models;
+using SmartBuy.Core.Models.Bots;
 using SmartBuy.Core.Models.Catalogo;
 using SmartBuy.Core.Models.Recomendacion;
 using SmartBuy.Core.Services;
@@ -93,6 +94,7 @@ namespace SmartBuy.Tests
                 CadenaId = cadenaId,
                 Cadena = cadena,
                 NombrePublicado = producto,
+                CodigoExterno = $"SKU-{cadenaId}-{productoId}",
                 Fecha = DateOnly.FromDateTime(DateTime.Today),
                 PrecioLista = efectivo,
                 PrecioEfectivo = efectivo,
@@ -100,8 +102,19 @@ namespace SmartBuy.Tests
                 ContenidoUnidad = contenidoUnidad
             };
 
+        /// <summary>Config de bots como la real: Carrefour y Día vtex, Coto tipo propio.</summary>
+        private static BotsConfiguration ConfigBots() => new()
+        {
+            Cadenas =
+            {
+                new BotCadenaConfiguration { CadenaId = Carrefour, Nombre = "Carrefour", Tipo = "vtex", BaseUrl = "https://www.carrefour.com.ar" },
+                new BotCadenaConfiguration { CadenaId = Coto, Nombre = "Coto", Tipo = "coto", BaseUrl = "https://ac.cnstrc.com" },
+                new BotCadenaConfiguration { CadenaId = Dia, Nombre = "Día", Tipo = "vtex", BaseUrl = "https://diaonline.supermercadosdia.com.ar" }
+            }
+        };
+
         private static RecomendacionServices Armar(FakeRecomendacionRepository repo, FakeProductoRepository? productos = null)
-            => new(repo, productos ?? new FakeProductoRepository(), new FakeCadenaRepository());
+            => new(repo, productos ?? new FakeProductoRepository(), new FakeCadenaRepository(), ConfigBots());
 
         private static ListaCompraRequest Pedido(params (long productoId, int cantidad)[] items)
             => new() { Items = items.Select(i => new ListaCompraItem { ProductoId = i.productoId, Cantidad = i.cantidad }).ToList() };
@@ -324,6 +337,52 @@ namespace SmartBuy.Tests
             Assert.Equal(new[] { Dia }, repo.UltimoFiltroCadenas!);
             // Con Coto excluido, gana Día aunque sea más caro.
             Assert.Equal(Dia, resultado.Result!.Items.Single().CadenaId);
+        }
+
+        // ---- Deep links de carrito ----
+
+        [Fact]
+        public async Task Arma_un_carrito_vtex_por_cadena_del_reparto_con_skus_y_cantidades()
+        {
+            var repo = new FakeRecomendacionRepository
+            {
+                Precios =
+                {
+                    Precio(1, "Coca-Cola", Dia, "Día", 1000m),
+                    Precio(2, "Yerba", Dia, "Día", 2000m),
+                    Precio(3, "Fideos", Carrefour, "Carrefour", 500m)
+                }
+            };
+
+            var resultado = await Armar(repo).ResolverListaAsync(Pedido((1, 2), (2, 1), (3, 1)), CancellationToken.None);
+
+            Assert.True(resultado.Success);
+            var carritos = resultado.Result!.Carritos;
+            Assert.Equal(2, carritos.Count);
+
+            var dia = carritos.Single(c => c.CadenaId == Dia);
+            Assert.StartsWith("https://diaonline.supermercadosdia.com.ar/checkout/cart/add?", dia.Url);
+            Assert.Contains($"sku=SKU-{Dia}-1&qty=2&seller=1", dia.Url);
+            Assert.Contains($"sku=SKU-{Dia}-2&qty=1&seller=1", dia.Url);
+
+            var carrefour = carritos.Single(c => c.CadenaId == Carrefour);
+            Assert.Contains($"sku=SKU-{Carrefour}-3&qty=1&seller=1", carrefour.Url);
+        }
+
+        [Fact]
+        public async Task Una_cadena_sin_soporte_de_carrito_no_genera_boton()
+        {
+            var repo = new FakeRecomendacionRepository
+            {
+                Precios = { Precio(1, "Coca-Cola", Coto, "Coto", 1000m) }
+            };
+
+            var resultado = await Armar(repo).ResolverListaAsync(Pedido((1, 1)), CancellationToken.None);
+
+            Assert.True(resultado.Success);
+            Assert.Empty(resultado.Result!.Carritos);
+            // Pero el ítem viaja igual, con su SKU informativo.
+            Assert.Equal($"SKU-{Coto}-1", resultado.Result.Items.Single().CodigoExterno);
         }
 
         // ---- Validaciones del request ----

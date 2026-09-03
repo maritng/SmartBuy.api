@@ -30,6 +30,12 @@ namespace SmartBuy.Api.Extensions
             services.AddSingleton<IDbConnectionFactory, OrionDbConnectionFactory>();
             services.AddScoped<ApiKeyAuthFilter>();
             services.Configure<BotsConfiguration>(configuration.GetSection("Bots"));
+
+            // El POCO directo, para servicios de Core que necesitan la config de
+            // cadenas (deep links de carrito) sin depender de IOptions.
+            services.AddSingleton(sp =>
+                sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<BotsConfiguration>>().Value);
+
             return services;
         }
 
