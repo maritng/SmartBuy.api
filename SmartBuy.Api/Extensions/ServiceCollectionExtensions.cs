@@ -49,6 +49,7 @@ namespace SmartBuy.Api.Extensions
             services.AddScoped<IRecomendacionServices, RecomendacionServices>();
             services.AddScoped<IAuthServices, AuthServices>();
             services.AddScoped<IListaServices, ListaServices>();
+            services.AddScoped<ITendenciaServices, TendenciaServices>();
             services.AddScoped<JwtTokenService>();
             return services;
         }
@@ -63,6 +64,7 @@ namespace SmartBuy.Api.Extensions
             services.AddScoped<IRecomendacionRepository, RecomendacionRepository>();
             services.AddScoped<IUsuarioRepository, UsuarioRepository>();
             services.AddScoped<IListaRepository, ListaRepository>();
+            services.AddScoped<ITendenciaRepository, TendenciaRepository>();
             return services;
         }
 
