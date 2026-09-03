@@ -7,6 +7,18 @@ namespace SmartBuy.Core.Models.Bots
     /// </summary>
     public class BotsConfiguration
     {
+        /// <summary>
+        /// Horas del día (0-23, HORA ARGENTINA) en que abre una ventana de
+        /// captura. [7, 19] = a la mañana con las ofertas del día ya publicadas
+        /// y una segunda pasada a la noche. Cada cadena captura una vez por
+        /// ventana; si la máquina estaba apagada a esa hora, captura al
+        /// encenderse (la ventana sigue vigente hasta el próximo horario).
+        /// Sin valores rige el default de VentanaCaptura (7). OJO: no poner
+        /// default acá — el binder de configuración AGREGA a la lista en vez de
+        /// reemplazarla.
+        /// </summary>
+        public List<int> HorariosCaptura { get; set; } = new();
+
         public List<BotCadenaConfiguration> Cadenas { get; set; } = new();
     }
 

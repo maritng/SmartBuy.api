@@ -34,8 +34,12 @@ namespace SmartBuy.Data.Repositories
                 precioefectivo = precioEfectivo
             }, cancellationToken);
 
-        public Task<StandarResponse<IdDto>> GetCapturaOkDeHoyAsync(long cadenaId, CancellationToken cancellationToken)
-            => ExecuteAsync<IdDto>("SmartBuy.IngestaCapturaOkDeHoy", new { cadenaid = cadenaId }, cancellationToken);
+        public Task<StandarResponse<IdDto>> GetCapturaOkDesdeAsync(long cadenaId, DateTimeOffset desde, CancellationToken cancellationToken)
+            => ExecuteAsync<IdDto>("SmartBuy.IngestaCapturaOkDeHoy", new
+            {
+                cadenaid = cadenaId,
+                desde = desde.UtcDateTime
+            }, cancellationToken);
 
         public Task<StandarResponse<CantidadDto>> CerrarCapturasAbandonadasAsync(int horasMaximas, CancellationToken cancellationToken)
             => ExecuteAsync<CantidadDto>("SmartBuy.CerrarCapturasAbandonadas", new { horasmaximas = horasMaximas }, cancellationToken);

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Options;
+using SmartBuy.Core.Common;
 using SmartBuy.Core.Interfaces.Repositories;
 using SmartBuy.Core.Interfaces.Services;
 using SmartBuy.Core.Models.Bots;
@@ -9,15 +10,17 @@ namespace SmartBuy.Api.Workers
     /// Orquestador de capturas de precios: corre dentro del propio monolito
     /// (BackgroundService, sin dependencias externas) y viaja con el contenedor.
     /// En cada tick revisa, por cadena habilitada, si ya existe una captura 'ok'
-    /// del día (tabla captura); si no, dispara el bot de su plataforma. Si a
-    /// futuro hacen falta reintentos sofisticados o dashboard, el reemplazo
-    /// natural de esta clase es Hangfire sobre el mismo Postgres.
+    /// de la VENTANA vigente (horarios configurados en Bots:HorariosCaptura,
+    /// hora argentina); si no, dispara el bot de su plataforma. Si a futuro
+    /// hacen falta reintentos sofisticados o dashboard, el reemplazo natural de
+    /// esta clase es Hangfire sobre el mismo Postgres.
     /// </summary>
     public class OrquestadorCapturasWorker : BackgroundService
     {
-        // Cada cuánto se despierta a revisar. El control de "ya corrí hoy" es
-        // contra la tabla captura, no contra este timer.
-        private static readonly TimeSpan Intervalo = TimeSpan.FromHours(1);
+        // Cada cuánto se despierta a revisar. El control de "ya corrí en esta
+        // ventana" es contra la tabla captura, no contra este timer: el tick
+        // corto solo hace que la corrida arranque cerca del horario programado.
+        private static readonly TimeSpan Intervalo = TimeSpan.FromMinutes(15);
 
         // Una captura en_proceso más vieja que esto es un bot que murió a mitad
         // de camino: el auto-saneo la cierra como error antes de cada revisión.
@@ -39,7 +42,9 @@ namespace SmartBuy.Api.Workers
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("Orquestador de capturas iniciado (intervalo de revisión: {Intervalo}).", Intervalo);
+            _logger.LogInformation(
+                "Orquestador de capturas iniciado. Horarios (hora argentina): {Horarios}; revisión cada {Intervalo}.",
+                string.Join(", ", _botsConfiguration.Value.HorariosCaptura), Intervalo);
 
             using var timer = new PeriodicTimer(Intervalo);
 
@@ -91,6 +96,12 @@ namespace SmartBuy.Api.Workers
                 return;
             }
 
+            var inicioVentana = VentanaCaptura.InicioVentanaActualUtc(
+                DateTimeOffset.UtcNow, _botsConfiguration.Value.HorariosCaptura);
+
+            _logger.LogDebug("Ventana de captura vigente desde {InicioArt} (hora argentina).",
+                inicioVentana.ToOffset(VentanaCaptura.OffsetArgentina));
+
             foreach (var config in cadenas)
             {
                 // Scope por cadena: servicios scoped frescos y un fallo aislado.
@@ -99,10 +110,10 @@ namespace SmartBuy.Api.Workers
                 try
                 {
                     var ingestaRepository = scope.ServiceProvider.GetRequiredService<IIngestaRepository>();
-                    var capturaHoy = await ingestaRepository.GetCapturaOkDeHoyAsync(config.CadenaId, cancellationToken);
+                    var capturaVentana = await ingestaRepository.GetCapturaOkDesdeAsync(config.CadenaId, inicioVentana, cancellationToken);
 
-                    if (capturaHoy.Success && capturaHoy.Result is { Id: > 0 })
-                        continue; // ya corrió bien hoy
+                    if (capturaVentana.Success && capturaVentana.Result is { Id: > 0 })
+                        continue; // ya corrió bien en esta ventana
 
                     var bot = scope.ServiceProvider.GetServices<ICapturaBot>()
                         .FirstOrDefault(b => b.Tipo.Equals(config.Tipo, StringComparison.OrdinalIgnoreCase));
