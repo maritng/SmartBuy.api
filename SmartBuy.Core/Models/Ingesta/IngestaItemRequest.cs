@@ -14,6 +14,13 @@ namespace SmartBuy.Core.Models.Ingesta
 
         public string? Url { get; set; }
 
+        /// <summary>
+        /// Categoría del sitio de donde el bot trajo el ítem, ya normalizada
+        /// (bebidas/almacen/lacteos/limpieza/perfumeria). Opcional: una fuente
+        /// sin categoría ingresa igual.
+        /// </summary>
+        public string? CategoriaCaptura { get; set; }
+
         public decimal PrecioLista { get; set; }
 
         public decimal? PrecioOferta { get; set; }

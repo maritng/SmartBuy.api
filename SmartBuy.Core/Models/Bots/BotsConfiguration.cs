@@ -37,6 +37,14 @@ namespace SmartBuy.Core.Models.Bots
         /// <summary>Rutas de categoría del sitio a capturar (ej. "bebidas", "almacen").</summary>
         public List<string> RutasCategorias { get; set; } = new();
 
+        /// <summary>
+        /// Normalización ruta del sitio → etiqueta canónica de categoria_captura
+        /// (bebidas/almacen/lacteos/limpieza/perfumeria). Ruta no mapeada = se
+        /// guarda la ruta cruda (dato imperfecto > dato perdido). Solo hace
+        /// falta mapear las rutas cuyo nombre difiere de la etiqueta.
+        /// </summary>
+        public Dictionary<string, string>? CategoriaPorRuta { get; set; }
+
         /// <summary>Tope de páginas (de 50 productos) por categoría: acota el volumen por corrida.</summary>
         public int MaxPaginasPorCategoria { get; set; } = 2;
 

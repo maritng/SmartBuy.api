@@ -43,6 +43,9 @@ namespace SmartBuy.Core.Services.Bots
 
             foreach (var ruta in config.RutasCategorias)
             {
+                // Etiqueta canónica de la categoría (o la ruta cruda si no está mapeada).
+                var categoria = config.CategoriaPorRuta?.GetValueOrDefault(ruta) ?? ruta;
+
                 for (var pagina = 0; pagina < config.MaxPaginasPorCategoria; pagina++)
                 {
                     var desde = pagina * TamanioPagina;
@@ -68,7 +71,7 @@ namespace SmartBuy.Core.Services.Bots
                         foreach (var producto in doc.RootElement.EnumerateArray())
                         {
                             cantidadPagina++;
-                            MapearProducto(producto, items, config.BaseUrl.TrimEnd('/'));
+                            MapearProducto(producto, items, config.BaseUrl.TrimEnd('/'), categoria);
                         }
                     }
 
@@ -100,7 +103,7 @@ namespace SmartBuy.Core.Services.Bots
         /// Un "product" VTEX tiene variantes (items), cada una con su SKU, EAN y
         /// precios propios. Se toman las disponibles con precio de lista válido.
         /// </summary>
-        private static void MapearProducto(JsonElement producto, Dictionary<string, IngestaItemRequest> destino, string baseUrl)
+        private static void MapearProducto(JsonElement producto, Dictionary<string, IngestaItemRequest> destino, string baseUrl, string categoria)
         {
             if (!producto.TryGetProperty("items", out var variantes) || variantes.ValueKind != JsonValueKind.Array)
                 return;
@@ -151,6 +154,7 @@ namespace SmartBuy.Core.Services.Bots
                     NombrePublicado = nombre.Length > 500 ? nombre[..500] : nombre,
                     EanPublicado = string.IsNullOrWhiteSpace(ean) ? null : ean,
                     Url = urlProducto,
+                    CategoriaCaptura = categoria,
                     PrecioLista = precioLista.Value,
                     PrecioOferta = precio.HasValue && precio < precioLista ? precio : null,
                     TipoOferta = LeerTeasers(oferta)

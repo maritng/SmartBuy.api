@@ -15,12 +15,13 @@ WITH candidato AS (
       AND p.ean = CAST(@eanpublicado AS text)
 ),
 pub AS (
-    INSERT INTO publicacion (cadena_id, codigo_externo, nombre_publicado, ean_publicado, url, producto_id, estado_matching)
+    INSERT INTO publicacion (cadena_id, codigo_externo, nombre_publicado, ean_publicado, url, categoria_captura, producto_id, estado_matching)
     SELECT @cadenaid,
            @codigoexterno,
            @nombrepublicado,
            CAST(@eanpublicado AS text),
            CAST(@url AS text),
+           CAST(@categoriacaptura AS text),
            c.producto_id,
            CASE WHEN c.producto_id IS NOT NULL THEN 'auto_ean' ELSE 'pendiente' END
     FROM (SELECT (SELECT producto_id FROM candidato) AS producto_id) c
@@ -28,6 +29,7 @@ pub AS (
         SET nombre_publicado   = excluded.nombre_publicado,
             ean_publicado      = COALESCE(excluded.ean_publicado, publicacion.ean_publicado),
             url                = COALESCE(excluded.url, publicacion.url),
+            categoria_captura  = COALESCE(excluded.categoria_captura, publicacion.categoria_captura),
             producto_id        = CASE
                                      WHEN publicacion.producto_id IS NULL
                                           AND publicacion.estado_matching = 'pendiente'

@@ -47,6 +47,10 @@ namespace SmartBuy.Core.Services.Bots
 
             foreach (var grupo in config.RutasCategorias)
             {
+                // Etiqueta canónica del grupo (los ids catv... de Coto SIEMPRE
+                // deberían estar mapeados en config; el fallback crudo avisa solo).
+                var categoria = config.CategoriaPorRuta?.GetValueOrDefault(grupo) ?? grupo;
+
                 for (var pagina = 1; pagina <= config.MaxPaginasPorCategoria; pagina++)
                 {
                     var url = $"{config.BaseUrl.TrimEnd('/')}/browse/group_id/{grupo}" +
@@ -73,7 +77,7 @@ namespace SmartBuy.Core.Services.Bots
                             foreach (var resultado in results.EnumerateArray())
                             {
                                 cantidadPagina++;
-                                MapearResultado(resultado, config.SucursalPreferida, items);
+                                MapearResultado(resultado, config.SucursalPreferida, items, categoria);
                             }
                         }
                     }
@@ -107,7 +111,7 @@ namespace SmartBuy.Core.Services.Bots
         /// las variantes (variations[].data). Se recorren todos los nodos con
         /// sku_id de forma defensiva: la estructura es del sitio, no nuestra.
         /// </summary>
-        private static void MapearResultado(JsonElement resultado, string? sucursalPreferida, Dictionary<string, IngestaItemRequest> destino)
+        private static void MapearResultado(JsonElement resultado, string? sucursalPreferida, Dictionary<string, IngestaItemRequest> destino, string categoria)
         {
             if (!resultado.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Object)
                 return;
@@ -141,6 +145,7 @@ namespace SmartBuy.Core.Services.Bots
                     NombrePublicado = nombre.Length > 500 ? nombre[..500] : nombre,
                     EanPublicado = ean,
                     Url = string.IsNullOrWhiteSpace(urlRelativa) ? null : $"https://www.coto.com.ar/{urlRelativa.TrimStart('/')}",
+                    CategoriaCaptura = categoria,
                     PrecioLista = precioLista.Value,
                     PrecioOferta = precioOferta.HasValue && precioOferta < precioLista ? precioOferta : null,
                     TipoOferta = LeerPromoDeImagenes(data)

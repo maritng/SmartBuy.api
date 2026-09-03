@@ -57,6 +57,11 @@ namespace SmartBuy.Core.Services
 
             foreach (var item in request.Items)
             {
+                // Etiqueta de categoría defensiva: recortada y nunca causa rechazo
+                // (dato imperfecto > captura caída).
+                var categoria = string.IsNullOrWhiteSpace(item.CategoriaCaptura) ? null : item.CategoriaCaptura.Trim();
+                item.CategoriaCaptura = categoria?.Length > 100 ? categoria[..100] : categoria;
+
                 // Precio efectivo por unidad comprada: min(lista, oferta directa,
                 // promo por cantidad computable). Queda persistido con el precio.
                 var precioEfectivo = Math.Min(

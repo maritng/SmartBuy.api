@@ -28,6 +28,7 @@ namespace SmartBuy.Data.Repositories
                 nombrepublicado = item.NombrePublicado,
                 eanpublicado = item.EanPublicado,
                 url = item.Url,
+                categoriacaptura = item.CategoriaCaptura,
                 preciolista = item.PrecioLista,
                 preciooferta = item.PrecioOferta,
                 tipooferta = item.TipoOferta,
