@@ -11,7 +11,11 @@ namespace SmartBuy.Data.Repositories
         {
         }
 
-        public Task<StandarResponse<List<EslabonCategoriaFila>>> GetEvolucionCategoriasAsync(int dias, CancellationToken cancellationToken)
-            => ExecuteAsync<List<EslabonCategoriaFila>>("SmartBuy.GetEvolucionCategorias", new { dias = dias }, cancellationToken);
+        public Task<StandarResponse<List<EslabonCategoriaFila>>> GetEvolucionCategoriasAsync(int dias, bool conPromos, CancellationToken cancellationToken)
+            => ExecuteAsync<List<EslabonCategoriaFila>>("SmartBuy.GetEvolucionCategorias", new
+            {
+                dias = dias,
+                conpromos = conPromos
+            }, cancellationToken);
     }
 }

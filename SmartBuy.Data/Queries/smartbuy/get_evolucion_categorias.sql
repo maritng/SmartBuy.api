@@ -5,11 +5,16 @@
 -- la suma de esos MISMOS ítems en su observación previa — así el catálogo
 -- puede crecer o achicarse sin distorsionar el índice. El encadenado a base
 -- 100 lo hace el servicio (IndiceCategoria).
+-- @conpromos: true = precio efectivo (promos incluidas), false = góndola
+-- (sin el serrucho de promos que entran y salen: nivel de precios limpio).
 WITH diarios AS (
     SELECT pub.categoria_captura AS categoria,
            p.publicacion_id,
            p.fecha,
-           MIN(COALESCE(p.precio_efectivo, LEAST(p.precio_lista, COALESCE(p.precio_oferta, p.precio_lista)))) AS precio
+           MIN(CASE WHEN CAST(@conpromos AS boolean)
+                    THEN COALESCE(p.precio_efectivo, LEAST(p.precio_lista, COALESCE(p.precio_oferta, p.precio_lista)))
+                    ELSE LEAST(p.precio_lista, COALESCE(p.precio_oferta, p.precio_lista))
+               END) AS precio
     FROM precio p
     JOIN publicacion pub ON pub.id = p.publicacion_id
     WHERE pub.categoria_captura IS NOT NULL

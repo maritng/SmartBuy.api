@@ -53,12 +53,13 @@ namespace SmartBuy.Data.Repositories
                 listaid = listaId
             }, cancellationToken);
 
-        public Task<StandarResponse<List<InflacionPrecioFila>>> GetInflacionListaAsync(long usuarioId, long listaId, int dias, CancellationToken cancellationToken)
+        public Task<StandarResponse<List<InflacionPrecioFila>>> GetInflacionListaAsync(long usuarioId, long listaId, int dias, bool conPromos, CancellationToken cancellationToken)
             => ExecuteAsync<List<InflacionPrecioFila>>("SmartBuy.GetInflacionLista", new
             {
                 usuarioid = usuarioId,
                 listaid = listaId,
-                dias = dias
+                dias = dias,
+                conpromos = conPromos
             }, cancellationToken);
     }
 }

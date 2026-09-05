@@ -127,7 +127,7 @@ namespace SmartBuy.Core.Services
             return borrado;
         }
 
-        public async Task<StandarResponse<InflacionCanastaResumen>> GetInflacionAsync(long usuarioId, long listaId, int? dias, CancellationToken cancellationToken)
+        public async Task<StandarResponse<InflacionCanastaResumen>> GetInflacionAsync(long usuarioId, long listaId, int? dias, bool conPromos, CancellationToken cancellationToken)
         {
             var ventana = Math.Clamp(dias ?? 90, 7, 365);
 
@@ -136,7 +136,7 @@ namespace SmartBuy.Core.Services
             if (!lista.Success || lista.Result == null)
                 return new StandarResponse<InflacionCanastaResumen> { Success = false, Errors = lista.Errors };
 
-            var filas = await _listaRepository.GetInflacionListaAsync(usuarioId, listaId, ventana, cancellationToken);
+            var filas = await _listaRepository.GetInflacionListaAsync(usuarioId, listaId, ventana, conPromos, cancellationToken);
             if (!filas.Success)
                 return new StandarResponse<InflacionCanastaResumen> { Success = false, Errors = filas.Errors, Execution = filas.Execution };
 

@@ -22,8 +22,8 @@ namespace SmartBuy.Core.Interfaces.Services
         /// <summary>Parsea el gramaje del nombre y completa el contenido de productos que no lo tienen.</summary>
         Task<StandarResponse<ContenidosResumen>> CompletarContenidosAsync(CancellationToken cancellationToken);
 
-        /// <summary>La historia de precios del producto (serie por cadena) + la señal "¿conviene comprar hoy?".</summary>
-        Task<StandarResponse<HistoricoProducto>> GetHistoricoAsync(long productoId, int? dias, CancellationToken cancellationToken);
+        /// <summary>La historia de precios del producto (serie por cadena) + la señal "¿conviene comprar hoy?". conPromos: efectivo vs. góndola.</summary>
+        Task<StandarResponse<HistoricoProducto>> GetHistoricoAsync(long productoId, int? dias, bool conPromos, CancellationToken cancellationToken);
 
         Task<StandarResponse<List<Marca>>> GetAllMarcasAsync(CancellationToken cancellationToken);
 

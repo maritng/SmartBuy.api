@@ -24,7 +24,7 @@ namespace SmartBuy.Core.Interfaces.Repositories
 
         Task<StandarResponse<IdDto>> EliminarListaAsync(long usuarioId, long listaId, CancellationToken cancellationToken);
 
-        /// <summary>Mejor precio por día de cada producto de la lista en los últimos N días (lista ajena = cero filas).</summary>
-        Task<StandarResponse<List<InflacionPrecioFila>>> GetInflacionListaAsync(long usuarioId, long listaId, int dias, CancellationToken cancellationToken);
+        /// <summary>Mejor precio por día de cada producto de la lista en los últimos N días (lista ajena = cero filas). conPromos: efectivo vs. góndola.</summary>
+        Task<StandarResponse<List<InflacionPrecioFila>>> GetInflacionListaAsync(long usuarioId, long listaId, int dias, bool conPromos, CancellationToken cancellationToken);
     }
 }

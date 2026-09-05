@@ -53,11 +53,12 @@ namespace SmartBuy.Data.Repositories
         public Task<StandarResponse<CantidadDto>> GenerarDesdePendientesAsync(int minCadenas, CancellationToken cancellationToken)
             => ExecuteAsync<CantidadDto>("SmartBuy.GenerarProductosDesdePendientes", new { mincadenas = minCadenas }, cancellationToken);
 
-        public Task<StandarResponse<List<HistoricoPrecioPunto>>> GetHistoricoProductoAsync(long productoId, int dias, CancellationToken cancellationToken)
+        public Task<StandarResponse<List<HistoricoPrecioPunto>>> GetHistoricoProductoAsync(long productoId, int dias, bool conPromos, CancellationToken cancellationToken)
             => ExecuteAsync<List<HistoricoPrecioPunto>>("SmartBuy.GetHistoricoProducto", new
             {
                 productoid = productoId,
-                dias = dias
+                dias = dias,
+                conpromos = conPromos
             }, cancellationToken);
 
         public Task<StandarResponse<List<Marca>>> GetAllMarcasAsync(CancellationToken cancellationToken)

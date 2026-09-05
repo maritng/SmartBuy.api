@@ -65,7 +65,7 @@ namespace SmartBuy.Core.Services
             return new StandarResponse<ProductoDetalle> { Success = true, Result = producto, Execution = respuesta.Execution };
         }
 
-        public async Task<StandarResponse<HistoricoProducto>> GetHistoricoAsync(long productoId, int? dias, CancellationToken cancellationToken)
+        public async Task<StandarResponse<HistoricoProducto>> GetHistoricoAsync(long productoId, int? dias, bool conPromos, CancellationToken cancellationToken)
         {
             if (productoId <= 0)
                 return Fallo<HistoricoProducto>("El id de producto es obligatorio.");
@@ -76,7 +76,7 @@ namespace SmartBuy.Core.Services
             if (!producto.Success || producto.Result == null)
                 return new StandarResponse<HistoricoProducto> { Success = false, Errors = producto.Errors };
 
-            var puntos = await _productoRepository.GetHistoricoProductoAsync(productoId, ventana, cancellationToken);
+            var puntos = await _productoRepository.GetHistoricoProductoAsync(productoId, ventana, conPromos, cancellationToken);
             if (!puntos.Success)
                 return new StandarResponse<HistoricoProducto> { Success = false, Errors = puntos.Errors, Execution = puntos.Execution };
 

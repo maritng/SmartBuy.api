@@ -51,8 +51,14 @@ namespace SmartBuy.Core.Models.Recomendacion
 
         public decimal PrecioUnitario { get; set; }
 
-        /// <summary>Promo cruda informativa ("2x1"): todavía no entra en el cálculo.</summary>
+        /// <summary>Texto crudo de la promo del súper (informativo).</summary>
         public string? TipoOferta { get; set; }
+
+        /// <summary>true si la cantidad pedida aprovecha la promo por cantidad (el subtotal ya la incluye).</summary>
+        public bool PromoAplicada { get; set; }
+
+        /// <summary>Explicación de la promo resuelta ("3x2 aplicado: llevás 3, pagás 2" / "Hay 3x2 llevando 3 — pagás precio lleno").</summary>
+        public string? DetallePromo { get; set; }
 
         /// <summary>Fecha del precio: si el bot no corre hace días, acá se nota.</summary>
         public DateOnly FechaPrecio { get; set; }

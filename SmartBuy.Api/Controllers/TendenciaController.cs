@@ -19,9 +19,9 @@ namespace SmartBuy.Api.Controllers
         }
 
         [HttpGet("GetEvolucionCategorias")]
-        public async Task<IActionResult> GetEvolucionCategorias([FromQuery] int? dias, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetEvolucionCategorias([FromQuery] int? dias, [FromQuery] bool? conPromos, CancellationToken cancellationToken)
         {
-            var evolucion = await _tendenciaServices.GetEvolucionCategoriasAsync(dias, cancellationToken);
+            var evolucion = await _tendenciaServices.GetEvolucionCategoriasAsync(dias, conPromos ?? true, cancellationToken);
             return evolucion.Success ? Ok(evolucion) : BadRequest(evolucion);
         }
     }

@@ -43,9 +43,9 @@ namespace SmartBuy.Api.Controllers
         /// (últimos N días, default 90) y la variación entre días completos.
         /// </summary>
         [HttpGet("GetInflacion")]
-        public async Task<IActionResult> GetInflacion([FromQuery] long listaId, [FromQuery] int? dias, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetInflacion([FromQuery] long listaId, [FromQuery] int? dias, [FromQuery] bool? conPromos, CancellationToken cancellationToken)
         {
-            var inflacion = await _listaServices.GetInflacionAsync(UsuarioId, listaId, dias, cancellationToken);
+            var inflacion = await _listaServices.GetInflacionAsync(UsuarioId, listaId, dias, conPromos ?? true, cancellationToken);
             return inflacion.Success ? Ok(inflacion) : BadRequest(inflacion);
         }
 

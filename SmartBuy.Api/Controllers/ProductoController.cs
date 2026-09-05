@@ -82,9 +82,9 @@ namespace SmartBuy.Api.Controllers
         /// últimos N días, default 90) + la señal "¿conviene comprar hoy?".
         /// </summary>
         [HttpGet("GetHistorico")]
-        public async Task<IActionResult> GetHistorico([FromQuery] long productoId, [FromQuery] int? dias, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetHistorico([FromQuery] long productoId, [FromQuery] int? dias, [FromQuery] bool? conPromos, CancellationToken cancellationToken)
         {
-            var historico = await _productoServices.GetHistoricoAsync(productoId, dias, cancellationToken);
+            var historico = await _productoServices.GetHistoricoAsync(productoId, dias, conPromos ?? true, cancellationToken);
             return historico.Success ? Ok(historico) : BadRequest(historico);
         }
 

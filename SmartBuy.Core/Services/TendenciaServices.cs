@@ -19,11 +19,11 @@ namespace SmartBuy.Core.Services
             _tendenciaRepository = tendenciaRepository;
         }
 
-        public async Task<StandarResponse<EvolucionCategorias>> GetEvolucionCategoriasAsync(int? dias, CancellationToken cancellationToken)
+        public async Task<StandarResponse<EvolucionCategorias>> GetEvolucionCategoriasAsync(int? dias, bool conPromos, CancellationToken cancellationToken)
         {
             var ventana = Math.Clamp(dias ?? 90, 7, 365);
 
-            var eslabones = await _tendenciaRepository.GetEvolucionCategoriasAsync(ventana, cancellationToken);
+            var eslabones = await _tendenciaRepository.GetEvolucionCategoriasAsync(ventana, conPromos, cancellationToken);
             if (!eslabones.Success)
                 return new StandarResponse<EvolucionCategorias> { Success = false, Errors = eslabones.Errors, Execution = eslabones.Execution };
 

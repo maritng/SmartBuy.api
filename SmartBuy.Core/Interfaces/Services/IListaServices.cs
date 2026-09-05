@@ -18,8 +18,8 @@ namespace SmartBuy.Core.Interfaces.Services
 
         Task<StandarResponse<IdDto>> EliminarListaAsync(long usuarioId, long listaId, CancellationToken cancellationToken);
 
-        /// <summary>La inflación personal de la lista: serie diaria del costo óptimo + variación entre días completos.</summary>
-        Task<StandarResponse<InflacionCanastaResumen>> GetInflacionAsync(long usuarioId, long listaId, int? dias, CancellationToken cancellationToken);
+        /// <summary>La inflación personal de la lista: serie diaria del costo óptimo + variación entre días completos. conPromos: efectivo vs. góndola.</summary>
+        Task<StandarResponse<InflacionCanastaResumen>> GetInflacionAsync(long usuarioId, long listaId, int? dias, bool conPromos, CancellationToken cancellationToken);
 
         Task<StandarResponse<List<long>>> GetMisCadenasAsync(long usuarioId, CancellationToken cancellationToken);
 

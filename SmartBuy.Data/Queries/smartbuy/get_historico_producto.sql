@@ -1,11 +1,15 @@
--- Historia de precios de un producto: por día y cadena, el mejor precio
--- efectivo capturado ese día. El filtro por fecha permite el partition pruning
--- (precio está particionada por mes). COALESCE cubre filas previas a la
--- columna precio_efectivo.
+-- Historia de precios de un producto: por día y cadena, el mejor precio del
+-- día. @conpromos elige la lectura: true = precio efectivo (promos por
+-- cantidad incluidas), false = precio de góndola pagando una unidad (lista u
+-- oferta directa) — la serie limpia de "nivel de precios". El filtro por fecha
+-- permite el partition pruning (precio está particionada por mes).
 SELECT p.fecha,
        pub.cadena_id,
        ca.nombre AS cadena,
-       MIN(COALESCE(p.precio_efectivo, LEAST(p.precio_lista, COALESCE(p.precio_oferta, p.precio_lista)))) AS precio
+       MIN(CASE WHEN CAST(@conpromos AS boolean)
+                THEN COALESCE(p.precio_efectivo, LEAST(p.precio_lista, COALESCE(p.precio_oferta, p.precio_lista)))
+                ELSE LEAST(p.precio_lista, COALESCE(p.precio_oferta, p.precio_lista))
+           END) AS precio
 FROM precio p
 JOIN publicacion pub ON pub.id = p.publicacion_id
 JOIN cadena ca ON ca.id = pub.cadena_id

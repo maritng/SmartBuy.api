@@ -110,5 +110,62 @@ namespace SmartBuy.Tests
             // 1000 * 2/3 = 666.666... -> 666.67
             Assert.Equal(666.67m, OfertaCalculator.CalcularEfectivo(1000m, "3x2"));
         }
+
+        // ---- La mecánica escalonada del renglón (matemática real del carrito) ----
+
+        [Theory]
+        [InlineData("3x2", 1, 1000, false)]  // no llega a la promo: lleno
+        [InlineData("3x2", 2, 2000, false)]
+        [InlineData("3x2", 3, 2000, true)]   // un grupo: pagás 2
+        [InlineData("3x2", 4, 3000, true)]   // grupo + 1 suelta llena
+        [InlineData("3x2", 6, 4000, true)]   // dos grupos
+        [InlineData("2x1", 2, 1000, true)]
+        [InlineData("2x1", 5, 3000, true)]   // dos pares + 1 llena
+        public void NxM_escalonado_paga_por_grupos_completos(string promo, int cantidad, double esperado, bool aplicada)
+        {
+            var renglon = OfertaCalculator.CalcularRenglon(1000m, promo, cantidad);
+
+            Assert.Equal((decimal)esperado, renglon.Total);
+            Assert.Equal(aplicada, renglon.PromoAplicada);
+            Assert.NotNull(renglon.DetallePromo);
+        }
+
+        [Theory]
+        [InlineData("2do al 70%", 1, 1000, false)]
+        [InlineData("2do al 70%", 2, 1300, true)]  // 2000 - 700
+        [InlineData("2do al 70%", 3, 2300, true)]  // par con descuento + 1 llena
+        [InlineData("2do al 70%", 4, 2600, true)]  // dos pares
+        public void Segunda_unidad_escalonada_descuenta_por_par_completo(string promo, int cantidad, double esperado, bool aplicada)
+        {
+            var renglon = OfertaCalculator.CalcularRenglon(1000m, promo, cantidad);
+
+            Assert.Equal((decimal)esperado, renglon.Total);
+            Assert.Equal(aplicada, renglon.PromoAplicada);
+        }
+
+        [Fact]
+        public void Renglon_sin_promo_computable_es_precio_por_cantidad_sin_detalle()
+        {
+            var renglon = OfertaCalculator.CalcularRenglon(1000m, "Tarjeta Carrefour 15%", 3);
+
+            Assert.Equal(3000m, renglon.Total);
+            Assert.False(renglon.PromoAplicada);
+            Assert.Null(renglon.DetallePromo);
+
+            Assert.Equal(2000m, OfertaCalculator.CalcularRenglon(1000m, null, 2).Total);
+        }
+
+        [Fact]
+        public void Renglon_explica_la_promo_en_criollo()
+        {
+            Assert.Equal("3x2 aplicado: llevás 3, pagás 2", OfertaCalculator.CalcularRenglon(1000m, "3x2", 3).DetallePromo);
+            Assert.Equal("Hay 3x2 llevando 3 — pagás precio lleno", OfertaCalculator.CalcularRenglon(1000m, "3x2", 1).DetallePromo);
+        }
+
+        [Fact]
+        public void Renglon_con_cantidad_invalida_devuelve_cero()
+        {
+            Assert.Equal(0m, OfertaCalculator.CalcularRenglon(1000m, "3x2", 0).Total);
+        }
     }
 }

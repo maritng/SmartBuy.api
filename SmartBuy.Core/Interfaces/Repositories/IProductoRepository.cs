@@ -23,8 +23,8 @@ namespace SmartBuy.Core.Interfaces.Repositories
         /// </summary>
         Task<StandarResponse<CantidadDto>> GenerarDesdePendientesAsync(int minCadenas, CancellationToken cancellationToken);
 
-        /// <summary>Mejor precio por día y cadena del producto en los últimos N días.</summary>
-        Task<StandarResponse<List<HistoricoPrecioPunto>>> GetHistoricoProductoAsync(long productoId, int dias, CancellationToken cancellationToken);
+        /// <summary>Mejor precio por día y cadena del producto en los últimos N días. conPromos: efectivo vs. góndola.</summary>
+        Task<StandarResponse<List<HistoricoPrecioPunto>>> GetHistoricoProductoAsync(long productoId, int dias, bool conPromos, CancellationToken cancellationToken);
 
         Task<StandarResponse<List<Marca>>> GetAllMarcasAsync(CancellationToken cancellationToken);
 

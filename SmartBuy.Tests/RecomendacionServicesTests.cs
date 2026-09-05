@@ -67,7 +67,7 @@ namespace SmartBuy.Tests
             public Task<StandarResponse<IdDto>> CrearMarcaAsync(string nombre, CancellationToken ct) => throw new NotImplementedException();
             public Task<StandarResponse<List<CategoriaNodo>>> GetAllCategoriasAsync(CancellationToken ct) => throw new NotImplementedException();
             public Task<StandarResponse<List<ProductoSinContenido>>> GetProductosSinContenidoAsync(CancellationToken ct) => throw new NotImplementedException();
-            public Task<StandarResponse<List<Core.Models.Historico.HistoricoPrecioPunto>>> GetHistoricoProductoAsync(long productoId, int dias, CancellationToken ct) => throw new NotImplementedException();
+            public Task<StandarResponse<List<Core.Models.Historico.HistoricoPrecioPunto>>> GetHistoricoProductoAsync(long productoId, int dias, bool conPromos, CancellationToken ct) => throw new NotImplementedException();
             public Task<StandarResponse<IdDto>> ActualizarContenidoAsync(long id, decimal valor, string unidad, CancellationToken ct) => throw new NotImplementedException();
         }
 
@@ -86,9 +86,10 @@ namespace SmartBuy.Tests
 
         private static PrecioProductoCadena Precio(
             long productoId, string producto, long cadenaId, string cadena, decimal efectivo,
-            decimal? contenidoValor = null, string? contenidoUnidad = null)
+            decimal? contenidoValor = null, string? contenidoUnidad = null, string? tipoOferta = null)
             => new()
             {
+                TipoOferta = tipoOferta,
                 ProductoId = productoId,
                 Producto = producto,
                 CadenaId = cadenaId,
@@ -337,6 +338,88 @@ namespace SmartBuy.Tests
             Assert.Equal(new[] { Dia }, repo.UltimoFiltroCadenas!);
             // Con Coto excluido, gana Día aunque sea más caro.
             Assert.Equal(Dia, resultado.Result!.Items.Single().CadenaId);
+        }
+
+        // ---- Matemática real del carrito (promos escalonadas por cantidad) ----
+
+        [Fact]
+        public async Task Promo_no_alcanzada_paga_precio_lleno_y_lo_explica()
+        {
+            var repo = new FakeRecomendacionRepository
+            {
+                Precios = { Precio(1, "Galletitas", Dia, "Día", 1000m, tipoOferta: "3x2") }
+            };
+
+            var resultado = await Armar(repo).ResolverListaAsync(Pedido((1, 1)), CancellationToken.None);
+
+            var item = resultado.Result!.Items.Single();
+            Assert.Equal(1000m, item.Subtotal); // llevando 1 no hay 3x2
+            Assert.False(item.PromoAplicada);
+            Assert.Contains("Hay 3x2", item.DetallePromo);
+        }
+
+        [Fact]
+        public async Task Promo_alcanzada_aplica_la_mecanica_escalonada()
+        {
+            var repo = new FakeRecomendacionRepository
+            {
+                Precios = { Precio(1, "Galletitas", Dia, "Día", 1000m, tipoOferta: "3x2") }
+            };
+
+            var resultado = await Armar(repo).ResolverListaAsync(Pedido((1, 4)), CancellationToken.None);
+
+            var item = resultado.Result!.Items.Single();
+            Assert.Equal(3000m, item.Subtotal); // 4 unidades con un grupo de 3x2: pagás 3
+            Assert.True(item.PromoAplicada);
+            Assert.Contains("3x2 aplicado", item.DetallePromo);
+        }
+
+        [Fact]
+        public async Task El_ganador_puede_cambiar_segun_la_cantidad()
+        {
+            // Día: $1000 con "3x2". Carrefour: $800 directo, sin promo.
+            var repo = new FakeRecomendacionRepository
+            {
+                Precios =
+                {
+                    Precio(1, "Galletitas", Dia, "Día", 1000m, tipoOferta: "3x2"),
+                    Precio(1, "Galletitas", Carrefour, "Carrefour", 800m)
+                }
+            };
+
+            var con1 = await Armar(repo).ResolverListaAsync(Pedido((1, 1)), CancellationToken.None);
+            var con3 = await Armar(repo).ResolverListaAsync(Pedido((1, 3)), CancellationToken.None);
+
+            // Con 1: Carrefour 800 < Día 1000 (la promo no juega).
+            Assert.Equal(Carrefour, con1.Result!.Items.Single().CadenaId);
+            Assert.Equal(800m, con1.Result.Items.Single().Subtotal);
+
+            // Con 3: Día 2000 (3x2) < Carrefour 2400.
+            Assert.Equal(Dia, con3.Result!.Items.Single().CadenaId);
+            Assert.Equal(2000m, con3.Result.Items.Single().Subtotal);
+        }
+
+        [Fact]
+        public async Task La_mejor_cadena_unica_usa_la_misma_matematica_escalonada()
+        {
+            var repo = new FakeRecomendacionRepository
+            {
+                Precios =
+                {
+                    Precio(1, "Galletitas", Dia, "Día", 1000m, tipoOferta: "3x2"),
+                    Precio(2, "Yerba", Dia, "Día", 2000m),
+                    Precio(1, "Galletitas", Carrefour, "Carrefour", 900m),
+                    Precio(2, "Yerba", Carrefour, "Carrefour", 2100m)
+                }
+            };
+
+            var resultado = await Armar(repo).ResolverListaAsync(Pedido((1, 3), (2, 1)), CancellationToken.None);
+
+            var unica = resultado.Result!.Totales.MejorCadenaUnica!;
+            // Día: 3x2 sobre 3 galletitas = 2000 + yerba 2000 = 4000.
+            // Carrefour: 2700 + 2100 = 4800. Gana Día.
+            Assert.Equal(Dia, unica.CadenaId);
+            Assert.Equal(4000m, unica.Total);
         }
 
         // ---- Deep links de carrito ----

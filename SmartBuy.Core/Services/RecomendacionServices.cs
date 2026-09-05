@@ -72,14 +72,25 @@ namespace SmartBuy.Core.Services
 
             var resumen = new ListaCompraResumen();
 
-            // Reparto óptimo: por producto, la fila más barata (el repo ya ordena
-            // por precio_efectivo, el First es el mínimo).
+            // Reparto óptimo: por producto, el ganador se elige por el TOTAL real
+            // con la cantidad pedida (mecánica escalonada de la promo): con
+            // cantidad 1, un "3x2" caro pierde contra un precio directo barato.
+            // Desempate por mejor precio efectivo unitario.
             foreach (var (productoId, opciones) in porProducto)
             {
-                var mejor = opciones.First();
                 var cantidad = cantidades[productoId];
 
-                var porUnidad = PrecioPorUnidad(mejor.PrecioEfectivo, mejor.ContenidoValor, mejor.ContenidoUnidad);
+                var evaluadas = opciones
+                    .Select(o => (Opcion: o, Renglon: OfertaCalculator.CalcularRenglon(PrecioGondola(o), o.TipoOferta, cantidad)))
+                    .OrderBy(x => x.Renglon.Total)
+                    .ThenBy(x => x.Opcion.PrecioEfectivo)
+                    .ToList();
+
+                var mejor = evaluadas[0].Opcion;
+                var renglon = evaluadas[0].Renglon;
+
+                // El $/unidad se calcula sobre lo efectivamente pagado por unidad.
+                var porUnidad = PrecioPorUnidad(renglon.Total / cantidad, mejor.ContenidoValor, mejor.ContenidoUnidad);
 
                 resumen.Items.Add(new RecomendacionItem
                 {
@@ -91,12 +102,14 @@ namespace SmartBuy.Core.Services
                     NombrePublicado = mejor.NombrePublicado,
                     CodigoExterno = mejor.CodigoExterno,
                     Url = mejor.Url,
-                    PrecioUnitario = mejor.PrecioEfectivo,
+                    PrecioUnitario = PrecioGondola(mejor),
                     TipoOferta = mejor.TipoOferta,
+                    PromoAplicada = renglon.PromoAplicada,
+                    DetallePromo = renglon.DetallePromo,
                     FechaPrecio = mejor.Fecha,
                     PrecioPorUnidad = porUnidad?.Precio,
                     UnidadBase = porUnidad?.Unidad,
-                    Subtotal = mejor.PrecioEfectivo * cantidad,
+                    Subtotal = renglon.Total,
                     CadenasComparadas = opciones.Count
                 });
             }
@@ -170,7 +183,8 @@ namespace SmartBuy.Core.Services
                 {
                     CadenaId = g.Key.CadenaId,
                     Cadena = g.Key.Cadena,
-                    Total = g.Sum(p => p.PrecioEfectivo * cantidades[p.ProductoId])
+                    // Misma matemática escalonada que el reparto: manzanas con manzanas.
+                    Total = g.Sum(p => OfertaCalculator.CalcularRenglon(PrecioGondola(p), p.TipoOferta, cantidades[p.ProductoId]).Total)
                 })
                 .OrderBy(c => c.Total)
                 .FirstOrDefault();
@@ -183,6 +197,10 @@ namespace SmartBuy.Core.Services
 
             return totales;
         }
+
+        /// <summary>El precio de góndola por unidad: lista u oferta directa, sin la promo condicional.</summary>
+        private static decimal PrecioGondola(PrecioProductoCadena opcion)
+            => Math.Min(opcion.PrecioLista, opcion.PrecioOferta ?? opcion.PrecioLista);
 
         /// <summary>
         /// Normaliza a unidad base ($/L, $/kg, $/un) para comparar presentaciones

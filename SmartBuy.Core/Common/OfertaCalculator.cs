@@ -60,5 +60,81 @@ namespace SmartBuy.Core.Common
             var factor = CalcularFactor(tipoOferta);
             return factor == null ? null : Math.Round(precioLista * factor.Value, 2);
         }
+
+        /// <summary>
+        /// El total de un renglón con la mecánica ESCALONADA real del súper,
+        /// dada la cantidad que se lleva: un "3x2" solo descuenta por cada grupo
+        /// de 3 completo (llevando 1 se paga lleno), y un "2do al X%" descuenta
+        /// por cada PAR completo (llevando 3: dos llenos + uno con descuento).
+        /// Es la matemática de la recomendación; el precio_efectivo por unidad
+        /// del histórico sigue usando CalcularEfectivo.
+        /// </summary>
+        public static RenglonConPromo CalcularRenglon(decimal precioUnitario, string? tipoOferta, int cantidad)
+        {
+            if (cantidad <= 0)
+                return new RenglonConPromo { Total = 0 };
+
+            var sinPromo = new RenglonConPromo { Total = Math.Round(precioUnitario * cantidad, 2) };
+
+            if (string.IsNullOrWhiteSpace(tipoOferta))
+                return sinPromo;
+
+            var nxm = PatronNxM().Match(tipoOferta);
+            if (nxm.Success)
+            {
+                var n = int.Parse(nxm.Groups[1].Value);
+                var m = int.Parse(nxm.Groups[2].Value);
+                if (n > m && m >= 1)
+                {
+                    var grupos = cantidad / n;
+                    var unidadesPagas = cantidad - grupos * (n - m);
+
+                    return new RenglonConPromo
+                    {
+                        Total = Math.Round(precioUnitario * unidadesPagas, 2),
+                        PromoAplicada = grupos > 0,
+                        DetallePromo = grupos > 0
+                            ? $"{n}x{m} aplicado: llevás {cantidad}, pagás {unidadesPagas}"
+                            : $"Hay {n}x{m} llevando {n} — pagás precio lleno"
+                    };
+                }
+            }
+
+            var segunda = PatronSegundaUnidad().Match(tipoOferta);
+            if (!segunda.Success)
+                segunda = PatronSegundaAl().Match(tipoOferta);
+
+            if (segunda.Success)
+            {
+                var porcentaje = int.Parse(segunda.Groups[1].Value);
+                if (porcentaje is > 0 and <= 100)
+                {
+                    var pares = cantidad / 2;
+
+                    return new RenglonConPromo
+                    {
+                        Total = Math.Round(precioUnitario * cantidad - pares * precioUnitario * porcentaje / 100m, 2),
+                        PromoAplicada = pares > 0,
+                        DetallePromo = pares > 0
+                            ? $"2da unidad al {porcentaje}% aplicada: llevás {cantidad}, {pares} con descuento"
+                            : $"Hay 2da unidad al {porcentaje}% llevando 2 — pagás precio lleno"
+                    };
+                }
+            }
+
+            return sinPromo;
+        }
+    }
+
+    /// <summary>El total de un renglón (precio × cantidad) con su promo por cantidad resuelta.</summary>
+    public sealed class RenglonConPromo
+    {
+        public decimal Total { get; init; }
+
+        /// <summary>true si la cantidad alcanzó para aprovechar la promo al menos una vez.</summary>
+        public bool PromoAplicada { get; init; }
+
+        /// <summary>Explicación para el usuario ("3x2 aplicado: llevás 3, pagás 2"). Null sin promo computable.</summary>
+        public string? DetallePromo { get; init; }
     }
 }
