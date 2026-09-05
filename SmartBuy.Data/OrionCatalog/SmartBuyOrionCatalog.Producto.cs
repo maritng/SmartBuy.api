@@ -58,11 +58,11 @@ namespace SmartBuy.Data.OrionCatalog
         public Task GetProductosSinContenido(OrionContext context) => Task.CompletedTask;
 
         [OrionAction(
-            "ActualizarContenidoProducto",
-            Query = "smartbuy/actualizar_contenido_producto.sql",
+            "ActualizarContenidosLote",
+            Query = "smartbuy/actualizar_contenidos_lote.sql",
             Provider = "PostgresSmartBuy",
             ExecutorType = typeof(SqlOrionExecutor))]
-        public Task ActualizarContenidoProducto(OrionContext context) => Task.CompletedTask;
+        public Task ActualizarContenidosLote(OrionContext context) => Task.CompletedTask;
 
         [OrionAction(
             "GetHistoricoProducto",

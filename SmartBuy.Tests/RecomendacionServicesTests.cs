@@ -68,7 +68,7 @@ namespace SmartBuy.Tests
             public Task<StandarResponse<List<CategoriaNodo>>> GetAllCategoriasAsync(CancellationToken ct) => throw new NotImplementedException();
             public Task<StandarResponse<List<ProductoSinContenido>>> GetProductosSinContenidoAsync(CancellationToken ct) => throw new NotImplementedException();
             public Task<StandarResponse<List<Core.Models.Historico.HistoricoPrecioPunto>>> GetHistoricoProductoAsync(long productoId, int dias, bool conPromos, CancellationToken ct) => throw new NotImplementedException();
-            public Task<StandarResponse<IdDto>> ActualizarContenidoAsync(long id, decimal valor, string unidad, CancellationToken ct) => throw new NotImplementedException();
+            public Task<StandarResponse<CantidadDto>> ActualizarContenidosLoteAsync(IReadOnlyCollection<(long Id, decimal Valor, string Unidad)> contenidos, CancellationToken ct) => throw new NotImplementedException();
         }
 
         private sealed class FakeCadenaRepository : ICadenaRepository

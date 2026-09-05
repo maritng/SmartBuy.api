@@ -73,12 +73,14 @@ namespace SmartBuy.Data.Repositories
         public Task<StandarResponse<List<ProductoSinContenido>>> GetProductosSinContenidoAsync(CancellationToken cancellationToken)
             => ExecuteAsync<List<ProductoSinContenido>>("SmartBuy.GetProductosSinContenido", null, cancellationToken);
 
-        public Task<StandarResponse<IdDto>> ActualizarContenidoAsync(long id, decimal valor, string unidad, CancellationToken cancellationToken)
-            => ExecuteAsync<IdDto>("SmartBuy.ActualizarContenidoProducto", new
+        public Task<StandarResponse<CantidadDto>> ActualizarContenidosLoteAsync(IReadOnlyCollection<(long Id, decimal Valor, string Unidad)> contenidos, CancellationToken cancellationToken)
+            => ExecuteAsync<CantidadDto>("SmartBuy.ActualizarContenidosLote", new
             {
-                id = id,
-                contenidovalor = valor,
-                contenidounidad = unidad
+                // CSVs paralelos zipeados por unnest en el SQL. Los decimales van
+                // con punto (InvariantCulture): el CAST a numeric[] no negocia comas.
+                ids = string.Join(',', contenidos.Select(c => c.Id)),
+                valores = string.Join(',', contenidos.Select(c => c.Valor.ToString(System.Globalization.CultureInfo.InvariantCulture))),
+                unidades = string.Join(',', contenidos.Select(c => c.Unidad))
             }, cancellationToken);
     }
 }

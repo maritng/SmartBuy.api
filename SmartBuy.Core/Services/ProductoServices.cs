@@ -234,6 +234,11 @@ namespace SmartBuy.Core.Services
 
             var resumen = new ContenidosResumen();
 
+            // El parser corre en memoria; a la base va UN solo lote. (Lección del
+            // 06/09: el update de a uno sobre ~900 productos superaba el timeout
+            // del proxy y quedaba a medias.)
+            var lote = new List<(long Id, decimal Valor, string Unidad)>();
+
             foreach (var producto in pendientes.Result ?? new List<ProductoSinContenido>())
             {
                 if (producto.Id <= 0)
@@ -249,11 +254,17 @@ namespace SmartBuy.Core.Services
                     continue;
                 }
 
-                var actualizacion = await _productoRepository.ActualizarContenidoAsync(
-                    producto.Id, contenido.Value.Valor, contenido.Value.Unidad, cancellationToken);
+                lote.Add((producto.Id, contenido.Value.Valor, contenido.Value.Unidad));
+            }
 
-                if (actualizacion.Success && actualizacion.Result is { Id: > 0 })
-                    resumen.Completados++;
+            if (lote.Count > 0)
+            {
+                var actualizacion = await _productoRepository.ActualizarContenidosLoteAsync(lote, cancellationToken);
+
+                if (!actualizacion.Success)
+                    return new StandarResponse<ContenidosResumen> { Success = false, Errors = actualizacion.Errors };
+
+                resumen.Completados = (int)(actualizacion.Result?.Cantidad ?? 0);
             }
 
             _logger.LogInformation("CompletarContenidos: {Revisados} revisados, {Completados} completados, {SinReconocer} sin gramaje reconocible.",

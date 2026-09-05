@@ -34,7 +34,7 @@ namespace SmartBuy.Core.Interfaces.Repositories
 
         Task<StandarResponse<List<ProductoSinContenido>>> GetProductosSinContenidoAsync(CancellationToken cancellationToken);
 
-        /// <summary>Solo completa si sigue null: la curación manual nunca se pisa.</summary>
-        Task<StandarResponse<IdDto>> ActualizarContenidoAsync(long id, decimal valor, string unidad, CancellationToken cancellationToken);
+        /// <summary>Completa contenidos en UNA llamada (lote). Solo pisa donde sigue null: la curación manual gana siempre. Devuelve cuántos completó.</summary>
+        Task<StandarResponse<CantidadDto>> ActualizarContenidosLoteAsync(IReadOnlyCollection<(long Id, decimal Valor, string Unidad)> contenidos, CancellationToken cancellationToken);
     }
 }
