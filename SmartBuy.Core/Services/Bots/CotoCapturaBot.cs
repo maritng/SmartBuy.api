@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
+using SmartBuy.Core.Common;
 using SmartBuy.Core.Common.Responses;
 using SmartBuy.Core.Interfaces.Services;
 using SmartBuy.Core.Models.Bots;
@@ -44,6 +45,7 @@ namespace SmartBuy.Core.Services.Bots
                 };
 
             var items = new Dictionary<string, IngestaItemRequest>();
+            var preciosSaneados = 0;
 
             foreach (var grupo in config.RutasCategorias)
             {
@@ -77,7 +79,7 @@ namespace SmartBuy.Core.Services.Bots
                             foreach (var resultado in results.EnumerateArray())
                             {
                                 cantidadPagina++;
-                                MapearResultado(resultado, config.SucursalPreferida, items, categoria);
+                                preciosSaneados += MapearResultado(resultado, config.SucursalPreferida, items, categoria);
                             }
                         }
                     }
@@ -96,6 +98,10 @@ namespace SmartBuy.Core.Services.Bots
                     Errors = new List<string> { $"El bot de {config.Nombre} no obtuvo ningún producto del sitio." }
                 };
 
+            if (preciosSaneados > 0)
+                _logger.LogWarning("Bot coto {Cadena}: {Saneados} ítems con precio de lista inválido saneados (lista > {Factor}x el precio de venta).",
+                    config.Nombre, preciosSaneados, SaneadorPrecios.FactorMaximo);
+
             _logger.LogInformation("Bot coto {Cadena}: {Items} publicaciones capturadas; entregando a ingesta.", config.Nombre, items.Count);
 
             return await _ingestaServices.RegistrarCapturaAsync(new IngestaRequest
@@ -111,10 +117,12 @@ namespace SmartBuy.Core.Services.Bots
         /// las variantes (variations[].data). Se recorren todos los nodos con
         /// sku_id de forma defensiva: la estructura es del sitio, no nuestra.
         /// </summary>
-        private static void MapearResultado(JsonElement resultado, string? sucursalPreferida, Dictionary<string, IngestaItemRequest> destino, string categoria)
+        private static int MapearResultado(JsonElement resultado, string? sucursalPreferida, Dictionary<string, IngestaItemRequest> destino, string categoria)
         {
+            var saneados = 0;
+
             if (!resultado.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Object)
-                return;
+                return saneados;
 
             var nombreProducto = resultado.TryGetProperty("value", out var v) ? v.GetString() : null;
             var urlRelativa = data.TryGetProperty("url", out var u) ? u.GetString() : null;
@@ -139,6 +147,11 @@ namespace SmartBuy.Core.Services.Bots
                 // rechazar la captura completa en la validación de ingesta.
                 var ean = LeerEan(nodo);
 
+                // Lista corrupta (regla compartida con VTEX) se reemplaza por la venta.
+                var par = SaneadorPrecios.Sanear(precioLista.Value, precioOferta);
+                if (par.Saneado)
+                    saneados++;
+
                 destino[sku] = new IngestaItemRequest
                 {
                     CodigoExterno = sku,
@@ -146,11 +159,13 @@ namespace SmartBuy.Core.Services.Bots
                     EanPublicado = ean,
                     Url = string.IsNullOrWhiteSpace(urlRelativa) ? null : $"https://www.coto.com.ar/{urlRelativa.TrimStart('/')}",
                     CategoriaCaptura = categoria,
-                    PrecioLista = precioLista.Value,
-                    PrecioOferta = precioOferta.HasValue && precioOferta < precioLista ? precioOferta : null,
+                    PrecioLista = par.PrecioLista,
+                    PrecioOferta = par.PrecioOferta,
                     TipoOferta = LeerPromoDeImagenes(data)
                 };
             }
+
+            return saneados;
         }
 
         private static IEnumerable<JsonElement> NodosConSku(JsonElement resultado, JsonElement data)

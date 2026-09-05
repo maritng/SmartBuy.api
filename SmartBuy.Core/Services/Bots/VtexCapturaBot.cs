@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
+using SmartBuy.Core.Common;
 using SmartBuy.Core.Common.Responses;
 using SmartBuy.Core.Interfaces.Services;
 using SmartBuy.Core.Models.Bots;
@@ -40,6 +41,7 @@ namespace SmartBuy.Core.Services.Bots
             // Dedupe por SKU: el mismo producto puede aparecer en más de una
             // categoría o página; una captura lleva cada publicación una vez.
             var items = new Dictionary<string, IngestaItemRequest>();
+            var preciosSaneados = 0;
 
             foreach (var ruta in config.RutasCategorias)
             {
@@ -71,7 +73,7 @@ namespace SmartBuy.Core.Services.Bots
                         foreach (var producto in doc.RootElement.EnumerateArray())
                         {
                             cantidadPagina++;
-                            MapearProducto(producto, items, config.BaseUrl.TrimEnd('/'), categoria);
+                            preciosSaneados += MapearProducto(producto, items, config.BaseUrl.TrimEnd('/'), categoria);
                         }
                     }
 
@@ -89,6 +91,10 @@ namespace SmartBuy.Core.Services.Bots
                     Errors = new List<string> { $"El bot de {config.Nombre} no obtuvo ningún producto del sitio." }
                 };
 
+            if (preciosSaneados > 0)
+                _logger.LogWarning("Bot vtex {Cadena}: {Saneados} ítems con ListPrice inválido saneados (lista > {Factor}x el precio de venta).",
+                    config.Nombre, preciosSaneados, SaneadorPrecios.FactorMaximo);
+
             _logger.LogInformation("Bot vtex {Cadena}: {Items} publicaciones capturadas; entregando a ingesta.", config.Nombre, items.Count);
 
             return await _ingestaServices.RegistrarCapturaAsync(new IngestaRequest
@@ -103,10 +109,12 @@ namespace SmartBuy.Core.Services.Bots
         /// Un "product" VTEX tiene variantes (items), cada una con su SKU, EAN y
         /// precios propios. Se toman las disponibles con precio de lista válido.
         /// </summary>
-        private static void MapearProducto(JsonElement producto, Dictionary<string, IngestaItemRequest> destino, string baseUrl, string categoria)
+        private static int MapearProducto(JsonElement producto, Dictionary<string, IngestaItemRequest> destino, string baseUrl, string categoria)
         {
+            var saneados = 0;
+
             if (!producto.TryGetProperty("items", out var variantes) || variantes.ValueKind != JsonValueKind.Array)
-                return;
+                return saneados;
 
             var nombreProducto = producto.TryGetProperty("productName", out var pn) ? pn.GetString() : null;
 
@@ -148,6 +156,11 @@ namespace SmartBuy.Core.Services.Bots
                 if (ean != null && (!ean.All(char.IsDigit) || ean.Length < 8 || ean.Length > 14))
                     ean = null;
 
+                // ListPrice corrupto (~x82 en Cencosud) se reemplaza por el precio real.
+                var par = SaneadorPrecios.Sanear(precioLista.Value, precio);
+                if (par.Saneado)
+                    saneados++;
+
                 destino[sku] = new IngestaItemRequest
                 {
                     CodigoExterno = sku,
@@ -155,11 +168,13 @@ namespace SmartBuy.Core.Services.Bots
                     EanPublicado = string.IsNullOrWhiteSpace(ean) ? null : ean,
                     Url = urlProducto,
                     CategoriaCaptura = categoria,
-                    PrecioLista = precioLista.Value,
-                    PrecioOferta = precio.HasValue && precio < precioLista ? precio : null,
+                    PrecioLista = par.PrecioLista,
+                    PrecioOferta = par.PrecioOferta,
                     TipoOferta = LeerTeasers(oferta)
                 };
             }
+
+            return saneados;
         }
 
         private static decimal? LeerDecimal(JsonElement elemento, string propiedad)
